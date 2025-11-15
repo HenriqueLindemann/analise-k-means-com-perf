@@ -15,7 +15,9 @@ data/*.bin
 
 # Resultados de análise
 scripts/results/run_*/
+scripts/results/k_analysis_*/
 scripts/results/latest
+scripts/results/latest_k_analysis
 scripts/results/*.txt
 scripts/results/*.md
 scripts/results/*.png
