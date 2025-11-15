@@ -1,0 +1,25 @@
+# Binários
+benchmark
+benchmark_debug
+preprocessor
+
+# Build artifacts
+build/
+*.o
+
+# Dados
+data/*.bin
+
+# Resultados
+benchmark/results/
+results_*.txt
+*.csv
+
+# perf artifacts
+perf.data
+perf.data.old
+
+# Outros
+.vscode/
+*.swp
+*~
