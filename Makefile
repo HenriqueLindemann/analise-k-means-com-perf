@@ -3,8 +3,8 @@
 CC = gcc
 CFLAGS_BASE = -Iinclude -Wall -Wextra
 CFLAGS_DEBUG = $(CFLAGS_BASE) -g -DDEBUG -O0
-CFLAGS_RELEASE = $(CFLAGS_BASE) -O3 -march=native -DNDEBUG
-LDFLAGS = -lm
+CFLAGS_RELEASE = $(CFLAGS_BASE) -O3 -march=native -DNDEBUG -ffast-math -funroll-loops -ftree-vectorize -fno-signed-zeros -fno-trapping-math -flto
+LDFLAGS = -lm -flto
 
 # Diretórios
 SRC_DIR = src
@@ -36,6 +36,7 @@ BENCHMARK_RELEASE = $(BIN_DIR)/kmeans_benchmark
 BENCHMARK_DEBUG = $(BIN_DIR)/kmeans_benchmark_debug
 PREPROCESSOR = $(BIN_DIR)/preprocessor
 CLUSTER_SAVE = $(BIN_DIR)/cluster_save
+VALIDATE = $(BIN_DIR)/validate_results
 
 .PHONY: all clean release debug test prepare
 
@@ -44,7 +45,7 @@ all: release
 
 # Build release (para benchmarks)
 release: CFLAGS = $(CFLAGS_RELEASE)
-release: $(BUILD_DIR) $(BIN_DIR) $(DATA_DIR) $(BENCHMARK_RELEASE) $(PREPROCESSOR) $(CLUSTER_SAVE)
+release: $(BUILD_DIR) $(BIN_DIR) $(DATA_DIR) $(BENCHMARK_RELEASE) $(PREPROCESSOR) $(CLUSTER_SAVE) $(VALIDATE)
 
 # Build debug (com prints)
 debug: CFLAGS = $(CFLAGS_DEBUG)
@@ -76,6 +77,10 @@ $(PREPROCESSOR): $(BUILD_DIR)/preprocessor.o $(BUILD_DIR)/data_loader.o
 
 # Compilar cluster_save
 $(CLUSTER_SAVE): $(BUILD_DIR)/cluster_and_save.o $(OBJS_RELEASE)
+	$(CC) $(CFLAGS_RELEASE) -o $@ $^ $(LDFLAGS)
+
+# Compilar validate_results
+$(VALIDATE): $(BUILD_DIR)/validate_results.o $(OBJS_RELEASE)
 	$(CC) $(CFLAGS_RELEASE) -o $@ $^ $(LDFLAGS)
 
 # Regras de compilação - RELEASE

@@ -1,7 +1,10 @@
 # Binários
+bin/
 benchmark
 benchmark_debug
 preprocessor
+cluster_save
+validate_results
 
 # Build artifacts
 build/
@@ -10,7 +13,19 @@ build/
 # Dados
 data/*.bin
 
-# Resultados
+# Resultados de análise
+scripts/results/run_*/
+scripts/results/latest
+scripts/results/*.txt
+scripts/results/*.md
+scripts/results/*.png
+scripts/results/*.csv
+scripts/results/*.bin
+
+# Manter apenas README da estrutura
+!scripts/results/README.md
+
+# Resultados antigos
 benchmark/results/
 results_*.txt
 *.csv
@@ -19,8 +34,14 @@ results_*.txt
 perf.data
 perf.data.old
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
 # Outros
 .vscode/
 *.swp
 *~
 household_power_consumption.txt
+.DS_Store

@@ -7,23 +7,51 @@ Implementação de K-means em C comparando duas abordagens:
 ## Quick Start
 
 ```bash
-# Análise completa automática (compila, processa, benchmarks, análise)
+# Pipeline completo automático (recomendado)
+# Validação -> Benchmark -> Análise -> Visualizações
 ./run_full_analysis.sh 5 100 15
 
-# OU passo a passo:
+# Resultados organizados em:
+# scripts/results/run_TIMESTAMP/
+# scripts/results/latest/  (symlink para última execução)
+```
 
+**O que o pipeline faz:**
+1. ✓ Compila binários (se necessário)
+2. ✓ Processa dataset (se necessário)
+3. ✓ **Valida corretude** (naive vs optimized)
+4. ✓ Executa benchmarks com `perf`
+5. ✓ Gera análises (txt + markdown)
+6. ✓ Cria visualizações (8 gráficos)
+7. ✓ Organiza tudo em pastas estruturadas
+
+**Ver resultados:**
+```bash
+# Análise em texto
+cat scripts/results/latest/analysis.txt
+
+# Validação
+cat scripts/results/latest/validation.txt
+
+# Gráficos
+xdg-open scripts/results/latest/graphs/performance/
+xdg-open scripts/results/latest/graphs/clusters/
+```
+
+### Executar passos individualmente
+
+```bash
 # 1. Compilar
-make
+make release
 
 # 2. Processar dataset completo (~2M amostras)
 bin/preprocessor 0
 
-# 3. Rodar benchmark com perf (gera análise automaticamente)
-./scripts/perf_benchmark.sh 5 100 15
+# 3. Validar equivalência
+./scripts/validate.sh 5 100 data/dataset.bin
 
-# 4. Visualizar clusters
-bin/cluster_save optimized 5 data/dataset.bin clusters
-python3 scripts/plot_clusters.py clusters_optimized.csv
+# 4. Benchmark manual
+./scripts/perf_benchmark.sh 5 100 15
 ```
 
 ## Estrutura do Projeto
@@ -72,6 +100,25 @@ echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
 
 4. **Compilação**: `-O3 -march=native`
 
+## Validação de Corretude
+
+Para garantir que as otimizações não quebraram o algoritmo:
+
+```bash
+# Validar que naive e optimized produzem resultados equivalentes
+./scripts/validate.sh 5 100 data/dataset.bin
+```
+
+O script compara:
+- **Centroids finais** (distância euclidiana < 0.001)
+- **Distribuição de clusters** (contagem de pontos por cluster)
+- **Inércia total** (soma das distâncias quadradas)
+
+**Resultado**: ✓ VALIDATION PASSED
+- Diferença máxima entre centroids: 0.000046
+- Diferença de inércia: 0.000%
+- Pontos diferentes: 1/2049280 (0.000%)
+
 ## Comandos Úteis
 
 ```bash
@@ -84,6 +131,9 @@ make clean                # Limpar
 bin/preprocessor 0        # Dataset completo
 bin/preprocessor 100000   # 100k amostras
 make test                 # Teste rápido
+
+# Validação
+./scripts/validate.sh     # Verificar equivalência naive vs optimized
 
 # Benchmarks
 ./scripts/perf_benchmark.sh <k> <iter> <runs>

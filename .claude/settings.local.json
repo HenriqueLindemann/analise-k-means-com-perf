@@ -4,7 +4,9 @@
       "Bash(mkdir:*)",
       "Bash(chmod:*)",
       "Bash(python3:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(make release:*)",
+      "Bash(./run_full_analysis.sh:*)"
     ],
     "deny": [],
     "ask": []

@@ -350,7 +350,7 @@ def generate_cluster_visualizations(k, dataset_path, output_dir):
 
         # Naive
         scatter1 = ax1.scatter(naive_df.iloc[:, 0], naive_df.iloc[:, 1],
-                              c=naive_df['cluster_id'], cmap='tab10',
+                              c=naive_df['cluster'], cmap='tab10',
                               alpha=0.5, s=10, edgecolors='none')
         ax1.set_xlabel('Global Active Power', fontsize=11, fontweight='bold')
         ax1.set_ylabel('Global Reactive Power', fontsize=11, fontweight='bold')
@@ -360,7 +360,7 @@ def generate_cluster_visualizations(k, dataset_path, output_dir):
 
         # Optimized
         scatter2 = ax2.scatter(opt_df.iloc[:, 0], opt_df.iloc[:, 1],
-                              c=opt_df['cluster_id'], cmap='tab10',
+                              c=opt_df['cluster'], cmap='tab10',
                               alpha=0.5, s=10, edgecolors='none')
         ax2.set_xlabel('Global Active Power', fontsize=11, fontweight='bold')
         ax2.set_ylabel('Global Reactive Power', fontsize=11, fontweight='bold')
@@ -375,8 +375,8 @@ def generate_cluster_visualizations(k, dataset_path, output_dir):
         # 2. Distribuição de pontos por cluster
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
-        naive_counts = naive_df['cluster_id'].value_counts().sort_index()
-        opt_counts = opt_df['cluster_id'].value_counts().sort_index()
+        naive_counts = naive_df['cluster'].value_counts().sort_index()
+        opt_counts = opt_df['cluster'].value_counts().sort_index()
 
         ax1.bar(naive_counts.index, naive_counts.values, color='#e74c3c', alpha=0.8, edgecolor='black')
         ax1.set_xlabel('Cluster ID', fontsize=11, fontweight='bold')
@@ -398,9 +398,9 @@ def generate_cluster_visualizations(k, dataset_path, output_dir):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
 
         # Calcular médias por cluster
-        feature_cols = [col for col in naive_df.columns if col != 'cluster_id']
-        naive_means = naive_df.groupby('cluster_id')[feature_cols].mean()
-        opt_means = opt_df.groupby('cluster_id')[feature_cols].mean()
+        feature_cols = [col for col in naive_df.columns if col != 'cluster']
+        naive_means = naive_df.groupby('cluster')[feature_cols].mean()
+        opt_means = opt_df.groupby('cluster')[feature_cols].mean()
 
         # Normalizar para visualização
         from sklearn.preprocessing import StandardScaler
@@ -509,7 +509,7 @@ def save_analysis_markdown(results, output_file):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: python3 analyze_perf.py <perf_results.txt> [output.md]")
+        print("Usage: python3 analyze_perf.py <perf_results.txt> [output.md] [k] [dataset_path]")
         sys.exit(1)
 
     file_path = sys.argv[1]
@@ -528,3 +528,17 @@ if __name__ == '__main__':
         print(f"\nGraphs generated:")
         for graph in graph_files:
             print(f"  - {output_dir / graph}")
+
+        # Gerar visualizações de clusters se fornecidos k e dataset_path
+        if len(sys.argv) > 4:
+            k = int(sys.argv[3])
+            dataset_path = sys.argv[4]
+            print(f"\nGenerating cluster visualizations (K={k})...")
+            try:
+                cluster_graphs = generate_cluster_visualizations(k, dataset_path, output_dir)
+                if cluster_graphs:
+                    print(f"\nCluster visualizations generated:")
+                    for graph in cluster_graphs:
+                        print(f"  - {output_dir / graph}")
+            except Exception as e:
+                print(f"Warning: Failed to generate cluster visualizations: {e}")

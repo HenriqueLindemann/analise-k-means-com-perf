@@ -42,8 +42,6 @@ void kmeans_optimized(DataSetSoA *dataset,
 
 // Funções auxiliares
 float euclidean_distance_aos(const DataPoint *p, const Centroid *c);
-float euclidean_distance_soa(const DataSetSoA *dataset, size_t point_idx,
-                              const float centroid[NUM_FEATURES]);
 
 void initialize_centroids_random(Centroid *centroids, const DataPoint *points,
                                   int k, size_t num_points);
