@@ -1,0 +1,38 @@
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     0.975 ± 0.011 seconds
+  Optimized: 1.076 ± 0.007 seconds
+  Speedup:   0.91x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      2,732,038,481   3,021,760,996       1.11x    ✗ WORSE
+Instructions                8,432,962,486   9,916,566,704       1.18x    ✗ WORSE
+IPC                                  0.00            0.00       0.00x    ✗ WORSE
+
+Cache references               45,582,843      48,171,457       1.06x    ✗ WORSE
+Cache misses                   27,578,383      16,715,384       0.61x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             2,681,859,531   3,816,306,802       1.42x    ✗ WORSE
+L1 dcache misses                2,941,841      21,800,045       7.41x    ✗ WORSE
+L1 miss rate (%)                     0.11            0.57       5.18x    ✗ WORSE
+
+Branches                      473,483,557     372,548,127       0.79x   ✓ BETTER
+Branch misses                     550,216          82,893       0.15x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 39.4% (SoA layout working!)
+✗ L1 misses increased by 641.0% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.10x slower

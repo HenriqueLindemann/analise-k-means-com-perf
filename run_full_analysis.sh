@@ -75,6 +75,7 @@ run_k_workflow() {
     # [B] Benchmark com perf
     echo "  [B] Running benchmark with perf..."
 
+    export LC_NUMERIC=C
     PERF_FILE="$K_DIR/perf_raw.txt"
 
     {

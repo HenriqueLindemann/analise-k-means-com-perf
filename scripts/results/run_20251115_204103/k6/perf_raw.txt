@@ -1,0 +1,67 @@
+=== K-means Perf Analysis ===
+Date: sáb 15 nov 2025 20:42:30 -03
+K=6, Max iterations=100, Runs=10
+P-cores: 0-7
+
+
+========================================
+  naive VERSION
+========================================
+
+1586.697
+1624.102
+1672.119
+1650.222
+1649.710
+1680.291
+1624.813
+1609.304
+1641.614
+1699.661
+
+ Performance counter stats for 'bin/kmeans_benchmark naive 6 100 data/dataset.bin' (10 runs):
+
+        4912597258      cpu_core/cycles/                                                        ( +-  0.26% )  (80.01%)
+       15496969296      cpu_core/instructions/                                                  ( +-  0.04% )  (89.99%)
+          93875165      cpu_core/cache-references/                                              ( +-  0.19% )  (89.98%)
+          59401392      cpu_core/cache-misses/                                                  ( +-  0.30% )  (89.98%)
+        4880418080      cpu_core/L1-dcache-loads/                                               ( +-  0.01% )  (90.00%)
+           4936990      cpu_core/L1-dcache-load-misses/  #    0.10% of all L1-dcache accesses   ( +-  2.27% )  (89.98%)
+           1300867      cpu_core/LLC-loads/                                                     ( +-  1.68% )  (89.99%)
+           1049327      cpu_core/LLC-load-misses/        #   80.66% of all LL-cache accesses    ( +-  1.93% )  (89.97%)
+         910929498      cpu_core/branches/                                                      ( +-  0.02% )  (90.03%)
+            900925      cpu_core/branch-misses/                                                 ( +-  0.26% )  (90.04%)
+
+           1.71515 +- 0.00975 seconds time elapsed  ( +-  0.57% )
+
+
+========================================
+  optimized VERSION
+========================================
+
+1723.572
+1867.393
+1771.843
+1811.873
+1878.867
+1742.518
+1766.047
+1898.326
+1815.993
+1802.233
+
+ Performance counter stats for 'bin/kmeans_benchmark optimized 6 100 data/dataset.bin' (10 runs):
+
+        5174139587      cpu_core/cycles/                                                        ( +-  0.52% )  (79.99%)
+       17350657294      cpu_core/instructions/                                                  ( +-  0.02% )  (90.01%)
+          92360636      cpu_core/cache-references/                                              ( +-  0.04% )  (90.01%)
+          31507610      cpu_core/cache-misses/                                                  ( +-  0.99% )  (90.01%)
+        6755071720      cpu_core/L1-dcache-loads/                                               ( +-  0.04% )  (90.00%)
+          39765634      cpu_core/L1-dcache-load-misses/  #    0.59% of all L1-dcache accesses   ( +-  1.72% )  (89.98%)
+           1488139      cpu_core/LLC-loads/                                                     ( +-  0.62% )  (90.01%)
+           1174017      cpu_core/LLC-load-misses/        #   78.89% of all LL-cache accesses    ( +-  0.67% )  (90.01%)
+         653239511      cpu_core/branches/                                                      ( +-  0.07% )  (90.01%)
+            109873      cpu_core/branch-misses/                                                 ( +-  2.67% )  (89.98%)
+
+            1.8802 +- 0.0182 seconds time elapsed  ( +-  0.97% )
+

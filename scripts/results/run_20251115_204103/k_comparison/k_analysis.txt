@@ -1,0 +1,128 @@
+================================================================================
+  K-MEANS COMPARISON: IMPACT OF K ON PERFORMANCE
+================================================================================
+
+EXECUTION TIME
+--------------------------------------------------------------------------------
+K     Naive (s)       Optimized (s)   Speedup   
+--------------------------------------------------------------------------------
+2     0.092           0.096           0.96      x
+4     0.360           0.489           0.74      x
+5     2.283           0.943           2.42      x
+6     1.587           1.724           0.92      x
+7     0.937           1.000           0.94      x
+
+DETAILED METRICS BY K
+--------------------------------------------------------------------------------
+
+K = 2
+----------------------------------------
+  Naive:
+    Time:           0.092 s
+    Cycles:         0.54 B
+    Instructions:   1.38 B
+    IPC:            2.57
+    Cache misses:   10.96 M
+    Branches:       0.16 B
+    Branch misses:  0.07 M
+
+  Optimized:
+    Time:           0.096 s
+    Cycles:         0.53 B
+    Instructions:   1.66 B
+    IPC:            3.15
+    Cache misses:   6.61 M
+    Branches:       0.13 B
+    Branch misses:  0.05 M
+
+  Speedup:          0.96x
+
+K = 4
+----------------------------------------
+  Naive:
+    Time:           0.360 s
+    Cycles:         1.41 B
+    Instructions:   4.21 B
+    IPC:            2.99
+    Cache misses:   22.70 M
+    Branches:       0.33 B
+    Branch misses:  0.55 M
+
+  Optimized:
+    Time:           0.489 s
+    Cycles:         1.51 B
+    Instructions:   4.97 B
+    IPC:            3.30
+    Cache misses:   12.41 M
+    Branches:       0.25 B
+    Branch misses:  0.07 M
+
+  Speedup:          0.74x
+
+K = 5
+----------------------------------------
+  Naive:
+    Time:           2.283 s
+    Cycles:         6.48 B
+    Instructions:   20.24 B
+    IPC:            3.12
+    Cache misses:   95.66 M
+    Branches:       1.23 B
+    Branch misses:  0.88 M
+
+  Optimized:
+    Time:           0.943 s
+    Cycles:         2.89 B
+    Instructions:   7.89 B
+    IPC:            2.73
+    Cache misses:   59.97 M
+    Branches:       0.17 B
+    Branch misses:  0.08 M
+
+  Speedup:          2.42x
+
+K = 6
+----------------------------------------
+  Naive:
+    Time:           1.587 s
+    Cycles:         4.91 B
+    Instructions:   15.50 B
+    IPC:            3.15
+    Cache misses:   59.40 M
+    Branches:       0.91 B
+    Branch misses:  0.90 M
+
+  Optimized:
+    Time:           1.724 s
+    Cycles:         5.17 B
+    Instructions:   17.35 B
+    IPC:            3.35
+    Cache misses:   31.51 M
+    Branches:       0.65 B
+    Branch misses:  0.11 M
+
+  Speedup:          0.92x
+
+K = 7
+----------------------------------------
+  Naive:
+    Time:           0.937 s
+    Cycles:         2.73 B
+    Instructions:   8.43 B
+    IPC:            3.09
+    Cache misses:   27.58 M
+    Branches:       0.47 B
+    Branch misses:  0.55 M
+
+  Optimized:
+    Time:           1.000 s
+    Cycles:         3.02 B
+    Instructions:   9.92 B
+    IPC:            3.28
+    Cache misses:   16.72 M
+    Branches:       0.37 B
+    Branch misses:  0.08 M
+
+  Speedup:          0.94x
+
+================================================================================

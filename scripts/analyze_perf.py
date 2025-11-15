@@ -31,56 +31,93 @@ def parse_perf_output(file_path):
         if current_version:
             # Extrair métricas
             # Formato: número cpu_core/metric_name/
+            # Números podem ter . ou , como separadores de milhares
 
             # Cycles
-            match = re.search(r'(\d+)\s+cpu_core/cycles/', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/cycles/', section)
             if match:
-                results[current_version]['cycles'] = int(match.group(1))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['cycles'] = int(value)
 
             # Instructions
-            match = re.search(r'(\d+)\s+cpu_core/instructions/.*#\s+([\d.]+)\s+insn per cycle', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/instructions/', section)
             if match:
-                results[current_version]['instructions'] = int(match.group(1))
-                results[current_version]['ipc'] = float(match.group(2))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['instructions'] = int(value)
+
+            # IPC (pode estar na linha de instructions ou separado)
+            match = re.search(r'#\s+([\d.,]+)\s+insn per cycle', section)
+            if match:
+                ipc_str = match.group(1).replace(',', '.')
+                results[current_version]['ipc'] = float(ipc_str)
 
             # Cache references
-            match = re.search(r'(\d+)\s+cpu_core/cache-references/', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/cache-references/', section)
             if match:
-                results[current_version]['cache_refs'] = int(match.group(1))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['cache_refs'] = int(value)
 
             # Cache misses
-            match = re.search(r'(\d+)\s+cpu_core/cache-misses/.*#\s+([\d.]+)%', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/cache-misses/', section)
             if match:
-                results[current_version]['cache_misses'] = int(match.group(1))
-                results[current_version]['cache_miss_rate'] = float(match.group(2))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['cache_misses'] = int(value)
+
+            # Cache miss rate
+            match = re.search(r'cache-misses/.*#\s+([\d.,]+)%', section)
+            if match:
+                rate_str = match.group(1).replace(',', '.')
+                results[current_version]['cache_miss_rate'] = float(rate_str)
 
             # L1 dcache loads
-            match = re.search(r'(\d+)\s+cpu_core/L1-dcache-loads/', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/L1-dcache-loads/', section)
             if match:
-                results[current_version]['l1_loads'] = int(match.group(1))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['l1_loads'] = int(value)
 
             # L1 dcache load misses
-            match = re.search(r'(\d+)\s+cpu_core/L1-dcache-load-misses/.*#\s+([\d.]+)%', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/L1-dcache-load-misses/', section)
             if match:
-                results[current_version]['l1_misses'] = int(match.group(1))
-                results[current_version]['l1_miss_rate'] = float(match.group(2))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['l1_misses'] = int(value)
+
+            # L1 miss rate
+            match = re.search(r'L1-dcache-load-misses/.*#\s+([\d.,]+)%', section)
+            if match:
+                rate_str = match.group(1).replace(',', '.')
+                results[current_version]['l1_miss_rate'] = float(rate_str)
 
             # Branches
-            match = re.search(r'(\d+)\s+cpu_core/branches/', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/branches/', section)
             if match:
-                results[current_version]['branches'] = int(match.group(1))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['branches'] = int(value)
 
             # Branch misses
-            match = re.search(r'(\d+)\s+cpu_core/branch-misses/.*#\s+([\d.]+)%', section)
+            match = re.search(r'([\d.,]+)\s+cpu_core/branch-misses/', section)
             if match:
-                results[current_version]['branch_misses'] = int(match.group(1))
-                results[current_version]['branch_miss_rate'] = float(match.group(2))
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['branch_misses'] = int(value)
+
+            # Branch miss rate
+            match = re.search(r'branch-misses/.*#\s+([\d.,]+)%', section)
+            if match:
+                rate_str = match.group(1).replace(',', '.')
+                results[current_version]['branch_miss_rate'] = float(rate_str)
 
             # Time
             match = re.search(r'([\d.]+)\s+\+-\s+([\d.]+)\s+seconds time elapsed', section)
             if match:
                 results[current_version]['time'] = float(match.group(1))
                 results[current_version]['time_std'] = float(match.group(2))
+
+    # Calcular IPC se não foi extraído
+    for version in ['naive', 'optimized']:
+        if 'ipc' not in results[version] or results[version].get('ipc', 0) == 0:
+            cycles = results[version].get('cycles', 0)
+            instructions = results[version].get('instructions', 0)
+            if cycles > 0 and instructions > 0:
+                results[version]['ipc'] = instructions / cycles
 
     return results
 

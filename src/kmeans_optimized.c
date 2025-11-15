@@ -124,6 +124,33 @@ static inline int find_nearest_cluster_k5(
     return nearest;
 }
 
+// Encontra cluster mais próximo - versão genérica para qualquer K
+static inline int find_nearest_cluster_generic(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES], int k) {
+
+    int nearest = 0;
+    float min_dist = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    for (int c = 1; c < k; c++) {
+        float dist = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+            centroids[c][0], centroids[c][1], centroids[c][2], centroids[c][3],
+            centroids[c][4], centroids[c][5], centroids[c][6]);
+
+        if (dist < min_dist) {
+            min_dist = dist;
+            nearest = c;
+        }
+    }
+
+    return nearest;
+}
+
 // Atualiza centroids - versão otimizada (1 ÚNICA passada!)
 static void update_centroids_soa(float centroids[][NUM_FEATURES],
                                   const DataSetSoA * restrict dataset, int k) {
@@ -211,13 +238,25 @@ void kmeans_optimized(DataSetSoA * restrict dataset,
     for (int iter = 0; iter < max_iterations; iter++) {
         int changes = 0;
 
-        // Loop principal otimizado para k=5
-        for (size_t i = 0; i < n; i++) {
-            const int old_cluster = cluster_ids[i];
-            const int new_cluster = find_nearest_cluster_k5(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+        // Usar versão especializada para k=5, genérica para outros
+        if (k == 5) {
+            // Loop principal otimizado para k=5 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k5(f0, f1, f2, f3, f4, f5, f6, i, centroids);
 
-            cluster_ids[i] = new_cluster;
-            changes += (old_cluster != new_cluster);
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else {
+            // Loop genérico para qualquer K
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_generic(f0, f1, f2, f3, f4, f5, f6, i, centroids, k);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
         }
 
         DEBUG_PRINT("Iteration %d: %d points changed cluster\n", iter, changes);
