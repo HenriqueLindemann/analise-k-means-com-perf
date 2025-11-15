@@ -97,11 +97,13 @@ python3 scripts/plot_clusters.py clusters_*.csv
 ## Dataset
 
 **Individual Household Electric Power Consumption**
-- 2,049,280 samples (2006-2010)
-- 7 features: power, voltage, intensity, sub-metering
-- Fonte: UCI Machine Learning Repository
 
 Ver `info_data_set.md` para detalhes.
+
+**Download do Dataset:**
+Baixe manualmente em:
+https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption
+Coloque o arquivo `household_power_consumption.txt` na pasta principal do projeto.
 
 ## Arquivos de Análise Gerados
 
