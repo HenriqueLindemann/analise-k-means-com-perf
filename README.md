@@ -1,170 +1,232 @@
 # K-means: Naive vs Cache-Optimized
 
-Implementação de K-means em C comparando duas abordagens:
-- **Naive (AoS)**: Array of Structs - implementação direta
-- **Optimized (SoA)**: Struct of Arrays - otimizada para cache
+Implementação de K-means em C comparando duas abordagens de organização de memória para medir impacto no desempenho.
+
+## Implementações
+
+### Naive (Array of Structs - AoS)
+
+Implementação direta onde cada ponto é representado como uma estrutura contígua:
+
+```c
+typedef struct {
+    float features[NUM_FEATURES];  // 7 features
+    int cluster_id;
+} DataPoint;
+
+DataPoint points[N];  // [p0: f0,f1,...,f6][p1: f0,f1,...,f6]...
+```
+
+**Características:**
+- Dados de um ponto ficam próximos na memória
+- Boa localidade espacial ao acessar todas features de um ponto
+- Má localidade ao processar uma feature específica de múltiplos pontos
+
+### Optimized (Struct of Arrays - SoA)
+
+Organização onde cada feature é armazenada em um array separado:
+
+```c
+typedef struct {
+    float *feature_arrays[NUM_FEATURES];  // 7 arrays separados
+    int *cluster_ids;
+    size_t size;
+} DataSetSoA;
+
+// Layout: [all_f0][all_f1]...[all_f6][cluster_ids]
+```
+
+**Características:**
+- Features separadas em arrays contíguos
+- Excelente localidade espacial e temporal ao processar uma feature
+- Cache lines são utilizadas de forma mais eficiente
+- Permite vetorização automática pelo compilador
+
+**Otimizações implementadas:**
+
+1. **Single-pass centroid updates**: Acumula todas features em uma única passada sobre cluster_ids (reduz de 7 passadas para 1)
+
+2. **Branchless distance calculation**: Calcula distâncias sem branches para reduzir mispredictions
+
+3. **Manual loop unrolling**: Loop desenrolado manualmente para K=5
+
+4. **Restrict pointers**: Permite ao compilador assumir não-aliasing
+
+5. **Prefetching**: __builtin_prefetch para carregar dados antecipadamente
+
+6. **Aggressive compilation**: -O3 -march=native -ffast-math -flto -funroll-loops
 
 ## Quick Start
 
 ```bash
 # Pipeline completo automático (recomendado)
-# Validação -> Benchmark -> Análise -> Visualizações
 ./run_full_analysis.sh 5 100 15
 
-# Resultados organizados em:
+# Resultados em:
 # scripts/results/run_TIMESTAMP/
 # scripts/results/latest/  (symlink para última execução)
 ```
 
-**O que o pipeline faz:**
-1. ✓ Compila binários (se necessário)
-2. ✓ Processa dataset (se necessário)
-3. ✓ **Valida corretude** (naive vs optimized)
-4. ✓ Executa benchmarks com `perf`
-5. ✓ Gera análises (txt + markdown)
-6. ✓ Cria visualizações (8 gráficos)
-7. ✓ Organiza tudo em pastas estruturadas
-
 **Ver resultados:**
 ```bash
-# Análise em texto
-cat scripts/results/latest/analysis.txt
-
-# Validação
-cat scripts/results/latest/validation.txt
-
-# Gráficos
-xdg-open scripts/results/latest/graphs/performance/
-xdg-open scripts/results/latest/graphs/clusters/
+cat scripts/results/latest/analysis.txt        # Análise completa
+cat scripts/results/latest/validation.txt      # Validação de corretude
+xdg-open scripts/results/latest/graphs/        # Visualizações
 ```
 
-### Executar passos individualmente
+## Pipeline Automatizado
 
-```bash
-# 1. Compilar
-make release
+O script `run_full_analysis.sh` executa o workflow completo em 5 etapas:
 
-# 2. Processar dataset completo (~2M amostras)
-bin/preprocessor 0
+### Etapa 1: Compilação
+Verifica e compila os binários necessários:
+- `bin/kmeans_benchmark` - Executa ambas as versões
+- `bin/validate_results` - Valida equivalência
+- `bin/preprocessor` - Converte dataset para binário
+- `bin/cluster_save` - Salva clusters para visualização
 
-# 3. Validar equivalência
-./scripts/validate.sh 5 100 data/dataset.bin
+### Etapa 2: Processamento de Dataset
+Converte o CSV original (~2M amostras) para formato binário eficiente:
+- Input: `household_power_consumption.txt`
+- Output: `data/dataset.bin`
 
-# 4. Benchmark manual
-./scripts/perf_benchmark.sh 5 100 15
+### Etapa 3: Validação de Corretude
+Executa naive e optimized com mesma seed e compara:
+- Centroids finais (threshold < 0.001)
+- Distribuição de clusters (pontos por cluster)
+- Inércia total (qualidade do clustering)
+
+**Pipeline para se a validação falhar.**
+
+### Etapa 4: Benchmarks com perf
+Executa ambas as versões com `perf stat` para coletar métricas hardware:
+- Cycles, instructions, IPC
+- Cache references/misses
+- L1 dcache loads/misses
+- LLC loads/misses
+- Branches/branch-misses
+
+Usa taskset para fixar em P-cores (0-7) e realiza múltiplas execuções para estabilidade.
+
+### Etapa 5: Análise e Visualizações
+Gera automaticamente:
+- Análise em texto (analysis.txt)
+- Relatório markdown (analysis.md)
+- 5 gráficos de performance
+- 3 gráficos de clustering
+- Organiza tudo em estrutura de pastas
+
+## Estrutura de Resultados
+
+Cada execução cria uma pasta com timestamp:
+
+```
+scripts/results/
+├── run_20251115_120000/
+│   ├── validation.txt              # Resultado da validação
+│   ├── perf_raw.txt                # Raw output do perf stat
+│   ├── analysis.txt                # Análise em texto
+│   ├── analysis.md                 # Relatório markdown
+│   ├── clusters_naive.csv          # Clusters (naive)
+│   ├── clusters_optimized.csv      # Clusters (optimized)
+│   └── graphs/
+│       ├── performance/
+│       │   ├── execution_time.png
+│       │   ├── cache_misses.png
+│       │   ├── ipc.png
+│       │   ├── metrics_comparison.png
+│       │   └── improvements.png
+│       └── clusters/
+│           ├── clusters_comparison.png
+│           ├── cluster_distribution.png
+│           └── cluster_centroids_heatmap.png
+└── latest -> run_20251115_120000   # Symlink para última execução
 ```
 
 ## Estrutura do Projeto
 
 ```
 .
-├── bin/              # Binários compilados
-│   ├── kmeans_benchmark
-│   ├── cluster_save
-│   └── preprocessor
-├── src/              # Implementações C (7 arquivos)
-├── include/          # Headers (3 arquivos)
-├── scripts/          # Benchmarks e análise
-│   ├── perf_benchmark.sh
-│   ├── analyze_perf.py
-│   ├── benchmark_csv.sh
-│   └── plot_clusters.py
-├── data/             # Datasets binários
+├── bin/                        # Binários compilados
+├── src/                        # Implementações C
+│   ├── kmeans_naive.c         # Versão AoS
+│   ├── kmeans_optimized.c     # Versão SoA
+│   ├── data_loader.c          # Carregamento de datasets
+│   └── ...
+├── include/                    # Headers
+├── scripts/                    # Automação e análise
+│   ├── run_full_analysis.sh   # Pipeline completo
+│   ├── analyze_perf.py        # Análise de métricas
+│   └── ...
+├── data/                       # Datasets binários
 └── Makefile
 ```
 
-## Instalação do perf
+## Executar Passos Manualmente
+
+Se preferir executar cada etapa separadamente:
 
 ```bash
-# Instalar linux-tools para o kernel
-sudo apt-get install linux-tools-$(uname -r) linux-tools-generic
+# Compilação
+make release              # Versão otimizada
+make debug                # Versão com prints de debug
+make clean                # Limpar binários
 
-# Verificar
-perf --version
+# Processamento de dados
+bin/preprocessor 0        # Dataset completo (~2M amostras)
+bin/preprocessor 100000   # Subset (100k amostras)
 
-# Configurar permissões (opcional)
-echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
-```
-
-## Otimizações Implementadas (SoA)
-
-1. **Struct of Arrays**: Features separadas em arrays contíguos
-   ```c
-   // Naive (AoS): [p0_f0,f1,...,f6][p1_f0,f1,...,f6]
-   // Optimized (SoA): [all_f0][all_f1]...[all_f6]
-   ```
-
-2. **Update centroids em 1 passada**: Reduz acessos a cluster_ids de 7x para 1x
-
-3. **Loop blocking**: Processamento em blocos de 1024 pontos
-
-4. **Compilação**: `-O3 -march=native`
-
-## Validação de Corretude
-
-Para garantir que as otimizações não quebraram o algoritmo:
-
-```bash
-# Validar que naive e optimized produzem resultados equivalentes
+# Validação manual
 ./scripts/validate.sh 5 100 data/dataset.bin
-```
 
-O script compara:
-- **Centroids finais** (distância euclidiana < 0.001)
-- **Distribuição de clusters** (contagem de pontos por cluster)
-- **Inércia total** (soma das distâncias quadradas)
+# Benchmark manual
+./scripts/perf_benchmark.sh 5 100 15
 
-**Resultado**: ✓ VALIDATION PASSED
-- Diferença máxima entre centroids: 0.000046
-- Diferença de inércia: 0.000%
-- Pontos diferentes: 1/2049280 (0.000%)
-
-## Comandos Úteis
-
-```bash
-# Compilar
-make release              # Release (otimizado)
-make debug                # Debug (com prints)
-make clean                # Limpar
-
-# Preparar dados
-bin/preprocessor 0        # Dataset completo
-bin/preprocessor 100000   # 100k amostras
-make test                 # Teste rápido
-
-# Validação
-./scripts/validate.sh     # Verificar equivalência naive vs optimized
-
-# Benchmarks
-./scripts/perf_benchmark.sh <k> <iter> <runs>
-./scripts/benchmark_csv.sh <k> <iter> <runs>
-
-# Clusters e visualização
-bin/cluster_save <naive|optimized> <k> data/dataset.bin clusters
+# Visualização de clusters
+bin/cluster_save naive 5 data/dataset.bin clusters
+bin/cluster_save optimized 5 data/dataset.bin clusters
 python3 scripts/plot_clusters.py clusters_*.csv
 ```
 
-## Dataset
+## Requisitos
 
-**Individual Household Electric Power Consumption**
+### Dataset
 
-Ver `info_data_set.md` para detalhes.
+Individual Household Electric Power Consumption (~2M amostras, 7 features)
 
-**Download do Dataset:**
-Baixe manualmente em:
-https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption
-Coloque o arquivo `household_power_consumption.txt` na pasta principal do projeto.
+Download: https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption
 
-## Arquivos de Análise Gerados
+Coloque o arquivo `household_power_consumption.txt` na raiz do projeto.
 
-Após rodar benchmarks, os seguintes arquivos são gerados automaticamente:
+Ver `info_data_set.md` para detalhes sobre o dataset.
 
-- `scripts/results/perf_TIMESTAMP.txt` - Log completo do perf
-- `scripts/results/analysis_TIMESTAMP.txt` - Análise em texto
-- `scripts/results/ANALYSIS_TIMESTAMP.md` - Relatório em markdown
-- `scripts/results/*.png` - Gráficos de comparação (5 gráficos):
-  - `execution_time.png` - Comparação de tempo de execução
-  - `cache_misses.png` - Comparação de cache misses
-  - `ipc.png` - Comparação de IPC
-  - `metrics_comparison.png` - Comparação de múltiplas métricas
-  - `improvements.png` - Melhorias percentuais
+### perf (Linux Performance Counters)
+
+Necessário para benchmarks de hardware:
+
+```bash
+# Instalar
+sudo apt-get install linux-tools-$(uname -r) linux-tools-generic
+
+# Verificar instalação
+perf --version
+
+# Configurar permissões (opcional, para rodar sem sudo)
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+```
+
+### Python (para análise e visualizações)
+
+```bash
+pip install matplotlib numpy scikit-learn
+```
+
+## Metodologia de Validação
+
+Para garantir que as otimizações preservam a corretude do algoritmo, o pipeline executa validação automática comparando:
+
+1. **Centroids finais**: Distância euclidiana < 0.001
+2. **Distribuição de clusters**: Contagem de pontos por cluster
+3. **Inércia total**: Soma das distâncias quadradas (métrica de qualidade)
+
+Ambas as versões executam com mesma seed para garantir inicialização idêntica.

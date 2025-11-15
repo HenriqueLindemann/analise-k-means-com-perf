@@ -100,45 +100,59 @@ ANALYSIS_TXT="$RESULTS_DIR/analysis.txt"
 ANALYSIS_MD="$RESULTS_DIR/analysis.md"
 
 # Gerar análise em texto
-echo "  Generating text analysis..."
+echo "  [5.1] Generating text analysis..."
 python3 scripts/analyze_perf.py "$PERF_FILE" > "$ANALYSIS_TXT"
 if [ $? -ne 0 ]; then
     echo "  ✗ Failed to generate text analysis"
     exit 1
 fi
 
-# Gerar análise em markdown com gráficos
-echo "  Generating markdown analysis and graphs..."
+# Gerar análise em markdown com gráficos de performance
+echo "  [5.2] Generating markdown and performance graphs..."
 python3 scripts/analyze_perf.py "$PERF_FILE" "$ANALYSIS_MD" "$K" "$DATASET"
 if [ $? -ne 0 ]; then
     echo "  ✗ Failed to generate markdown analysis"
     exit 1
 fi
 
-# Organizar gráficos em pastas
-echo "  Organizing graphs..."
-
-# Mover gráficos de performance para pasta específica
+# Verificar se gráficos de performance foram gerados
+echo "  [5.3] Organizing performance graphs..."
+# Small delay to ensure all files are flushed to disk
+sleep 1
+graph_count=0
 for graph in execution_time cache_misses ipc metrics_comparison improvements; do
     if [ -f "$RESULTS_DIR/${graph}.png" ]; then
-        mv "$RESULTS_DIR/${graph}.png" "$RESULTS_DIR/graphs/performance/" 2>/dev/null
+        mv "$RESULTS_DIR/${graph}.png" "$RESULTS_DIR/graphs/performance/"
+        graph_count=$((graph_count + 1))
     fi
 done
+echo "      ✓ $graph_count performance graphs organized"
 
-# Mover gráficos de clusters para pasta específica
+# Verificar se gráficos de clusters foram gerados
+echo "  [5.4] Organizing cluster graphs..."
+cluster_count=0
 for graph in clusters_comparison cluster_distribution cluster_centroids_heatmap; do
     if [ -f "$RESULTS_DIR/${graph}.png" ]; then
-        mv "$RESULTS_DIR/${graph}.png" "$RESULTS_DIR/graphs/clusters/" 2>/dev/null
+        mv "$RESULTS_DIR/${graph}.png" "$RESULTS_DIR/graphs/clusters/"
+        cluster_count=$((cluster_count + 1))
     fi
 done
+echo "      ✓ $cluster_count cluster graphs organized"
 
-# Mover arquivos CSV de clusters
-if [ -f "$RESULTS_DIR/clusters_naive.csv" ]; then
-    # CSVs já estão no lugar certo
-    :
+# Limpar arquivos temporários apenas se existirem
+echo "  [5.5] Cleaning up temporary files..."
+removed=0
+if [ -f scripts/results/clusters_naive.csv ] || [ -f scripts/results/clusters_optimized.csv ]; then
+    rm -f scripts/results/clusters_*.csv scripts/results/clusters_*.bin 2>/dev/null
+    removed=1
+fi
+if [ $removed -eq 1 ]; then
+    echo "      ✓ Temporary files removed"
+else
+    echo "      ✓ No temporary files to remove"
 fi
 
-echo "  ✓ Analysis complete"
+echo "  ✓ Analysis and visualizations complete"
 
 # Criar symlink para latest
 rm -f scripts/results/latest

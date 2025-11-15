@@ -6,7 +6,8 @@
       "Bash(python3:*)",
       "Bash(tree:*)",
       "Bash(make release:*)",
-      "Bash(./run_full_analysis.sh:*)"
+      "Bash(./run_full_analysis.sh:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

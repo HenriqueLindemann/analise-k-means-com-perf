@@ -60,14 +60,6 @@ int main(int argc, char *argv[]) {
         // Output apenas o tempo (para parsing fácil pelo script)
         printf("%.3f\n", timer_elapsed_ms(&timer));
 
-        // Salvar resultados
-        int *cluster_ids = malloc(num_points * sizeof(int));
-        for (size_t i = 0; i < num_points; i++) {
-            cluster_ids[i] = points[i].cluster_id;
-        }
-        save_results("results_naive.txt", cluster_ids, num_points, k);
-
-        free(cluster_ids);
         free(centroids);
         free(points);
 
@@ -95,9 +87,6 @@ int main(int argc, char *argv[]) {
 
         // Output apenas o tempo
         printf("%.3f\n", timer_elapsed_ms(&timer));
-
-        // Salvar resultados
-        save_results("results_optimized.txt", dataset->cluster_ids, num_points, k);
 
         free(centroids);
         free_dataset_soa(dataset);
