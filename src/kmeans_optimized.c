@@ -14,17 +14,19 @@
 // Versão OTIMIZADA: Struct of Arrays (SoA), cache-friendly, loop blocking
 
 // Calcula distância euclidiana ao quadrado - versão SoA otimizada
-float euclidean_distance_soa(const DataSetSoA *dataset, size_t point_idx,
-                              const float centroid[NUM_FEATURES]) {
+static inline float euclidean_distance_soa(const DataSetSoA * restrict dataset, size_t point_idx,
+                                           const float * restrict centroid) {
     // Acesso sequencial à memória para melhor uso de cache
-    float diff0 = dataset->global_active_power[point_idx] - centroid[0];
-    float diff1 = dataset->global_reactive_power[point_idx] - centroid[1];
-    float diff2 = dataset->voltage[point_idx] - centroid[2];
-    float diff3 = dataset->global_intensity[point_idx] - centroid[3];
-    float diff4 = dataset->sub_metering_1[point_idx] - centroid[4];
-    float diff5 = dataset->sub_metering_2[point_idx] - centroid[5];
-    float diff6 = dataset->sub_metering_3[point_idx] - centroid[6];
+    // Usar restrict ajuda o compilador a otimizar
+    const float diff0 = dataset->global_active_power[point_idx] - centroid[0];
+    const float diff1 = dataset->global_reactive_power[point_idx] - centroid[1];
+    const float diff2 = dataset->voltage[point_idx] - centroid[2];
+    const float diff3 = dataset->global_intensity[point_idx] - centroid[3];
+    const float diff4 = dataset->sub_metering_1[point_idx] - centroid[4];
+    const float diff5 = dataset->sub_metering_2[point_idx] - centroid[5];
+    const float diff6 = dataset->sub_metering_3[point_idx] - centroid[6];
 
+    // FMA (fused multiply-add) pode ser usado pelo compilador aqui
     return diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 +
            diff4 * diff4 + diff5 * diff5 + diff6 * diff6;
 }
@@ -85,80 +87,84 @@ static inline int find_nearest_cluster_soa(const DataSetSoA *dataset, size_t poi
 
 // Atualiza centroids - versão otimizada (1 ÚNICA passada!)
 static void update_centroids_soa(float centroids[][NUM_FEATURES],
-                                  const DataSetSoA *dataset, int k) {
-    // Arrays temporários para acumulação - layout SoA para melhor cache
-    float *sums[NUM_FEATURES];
-    int *counts = calloc(k, sizeof(int));
+                                  const DataSetSoA * restrict dataset, int k) {
+    // Alocar tudo de uma vez em bloco contíguo para melhor cache
+    // Layout: [sums_feature0][sums_feature1]...[sums_feature6][counts]
+    const size_t total_size = NUM_FEATURES * k * sizeof(float) + k * sizeof(int);
+    void *buffer = calloc(1, total_size);
 
-    for (int f = 0; f < NUM_FEATURES; f++) {
-        sums[f] = calloc(k, sizeof(float));
-    }
+    float *sums_base = (float *)buffer;
+    int *counts = (int *)(sums_base + NUM_FEATURES * k);
 
-    size_t n = dataset->num_points;
+    // Ponteiros para cada feature
+    float * restrict sums0 = sums_base + 0 * k;
+    float * restrict sums1 = sums_base + 1 * k;
+    float * restrict sums2 = sums_base + 2 * k;
+    float * restrict sums3 = sums_base + 3 * k;
+    float * restrict sums4 = sums_base + 4 * k;
+    float * restrict sums5 = sums_base + 5 * k;
+    float * restrict sums6 = sums_base + 6 * k;
+
+    const size_t n = dataset->num_points;
+    const int * restrict cluster_ids = dataset->cluster_ids;
 
     // UMA ÚNICA passada - acumula todas features ao mesmo tempo
-    // Mantém cluster_ids na cache L1
+    // Usar restrict ajuda o compilador a otimizar
     for (size_t i = 0; i < n; i++) {
-        int cluster = dataset->cluster_ids[i];
+        const int cluster = cluster_ids[i];
 
         // Acumular todas as features para este cluster
-        sums[0][cluster] += dataset->global_active_power[i];
-        sums[1][cluster] += dataset->global_reactive_power[i];
-        sums[2][cluster] += dataset->voltage[i];
-        sums[3][cluster] += dataset->global_intensity[i];
-        sums[4][cluster] += dataset->sub_metering_1[i];
-        sums[5][cluster] += dataset->sub_metering_2[i];
-        sums[6][cluster] += dataset->sub_metering_3[i];
+        sums0[cluster] += dataset->global_active_power[i];
+        sums1[cluster] += dataset->global_reactive_power[i];
+        sums2[cluster] += dataset->voltage[i];
+        sums3[cluster] += dataset->global_intensity[i];
+        sums4[cluster] += dataset->sub_metering_1[i];
+        sums5[cluster] += dataset->sub_metering_2[i];
+        sums6[cluster] += dataset->sub_metering_3[i];
         counts[cluster]++;
     }
 
     // Calcular médias
     for (int i = 0; i < k; i++) {
         if (counts[i] > 0) {
-            float inv_count = 1.0f / counts[i];
-            for (int f = 0; f < NUM_FEATURES; f++) {
-                centroids[i][f] = sums[f][i] * inv_count;
-            }
+            const float inv_count = 1.0f / counts[i];
+            centroids[i][0] = sums0[i] * inv_count;
+            centroids[i][1] = sums1[i] * inv_count;
+            centroids[i][2] = sums2[i] * inv_count;
+            centroids[i][3] = sums3[i] * inv_count;
+            centroids[i][4] = sums4[i] * inv_count;
+            centroids[i][5] = sums5[i] * inv_count;
+            centroids[i][6] = sums6[i] * inv_count;
         }
     }
 
-    // Limpar memória temporária
-    for (int f = 0; f < NUM_FEATURES; f++) {
-        free(sums[f]);
-    }
-    free(counts);
+    // Limpar memória (uma única free!)
+    free(buffer);
 }
 
 // K-means OTIMIZADO
-void kmeans_optimized(DataSetSoA *dataset,
+void kmeans_optimized(DataSetSoA * restrict dataset,
                       float centroids[][NUM_FEATURES],
                       int k, int max_iterations) {
 
     // Inicializar centroids
     initialize_centroids_soa(centroids, dataset, k);
 
-    // Blocking size para melhor cache locality
-    const size_t BLOCK_SIZE = 1024;
+    const size_t n = dataset->num_points;
+    int * restrict cluster_ids = dataset->cluster_ids;
 
     // Iterar até convergência ou max_iterations
     for (int iter = 0; iter < max_iterations; iter++) {
         int changes = 0;
 
-        // Processar pontos em blocos (cache blocking)
-        for (size_t block_start = 0; block_start < dataset->num_points; block_start += BLOCK_SIZE) {
-            size_t block_end = block_start + BLOCK_SIZE;
-            if (block_end > dataset->num_points) {
-                block_end = dataset->num_points;
-            }
+        // Processar todos os pontos sequencialmente
+        // Loop simples para melhor vetorização do compilador
+        for (size_t i = 0; i < n; i++) {
+            const int new_cluster = find_nearest_cluster_soa(dataset, i, centroids, k);
 
-            // Atribuir pontos neste bloco aos clusters mais próximos
-            for (size_t i = block_start; i < block_end; i++) {
-                int new_cluster = find_nearest_cluster_soa(dataset, i, centroids, k);
-
-                if (dataset->cluster_ids[i] != new_cluster) {
-                    changes++;
-                    dataset->cluster_ids[i] = new_cluster;
-                }
+            if (cluster_ids[i] != new_cluster) {
+                changes++;
+                cluster_ids[i] = new_cluster;
             }
         }
 

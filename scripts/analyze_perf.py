@@ -314,6 +314,128 @@ def generate_graphs(results, output_dir):
         'improvements.png'
     ]
 
+def generate_cluster_visualizations(k, dataset_path, output_dir):
+    """Gera visualizações dos clusters usando ambas as versões"""
+    import subprocess
+    from pathlib import Path
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Gerar clusters para ambas as versões
+    for version in ['naive', 'optimized']:
+        cluster_file = output_path / f'clusters_{version}.csv'
+
+        # Executar cluster_save
+        cmd = f'bin/cluster_save {version} {k} {dataset_path} {output_path / "clusters"}'
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            print(f"Warning: Failed to generate clusters for {version}")
+            continue
+
+    # Gerar plots combinados
+    naive_file = output_path / 'clusters_naive.csv'
+    opt_file = output_path / 'clusters_optimized.csv'
+
+    if naive_file.exists() and opt_file.exists():
+        # Importar pandas para análise
+        import pandas as pd
+
+        naive_df = pd.read_csv(naive_file)
+        opt_df = pd.read_csv(opt_file)
+
+        # 1. Scatter plot comparando clusters (primeiras 2 features)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+
+        # Naive
+        scatter1 = ax1.scatter(naive_df.iloc[:, 0], naive_df.iloc[:, 1],
+                              c=naive_df['cluster_id'], cmap='tab10',
+                              alpha=0.5, s=10, edgecolors='none')
+        ax1.set_xlabel('Global Active Power', fontsize=11, fontweight='bold')
+        ax1.set_ylabel('Global Reactive Power', fontsize=11, fontweight='bold')
+        ax1.set_title('K-means Clustering - Naive', fontsize=13, fontweight='bold')
+        ax1.grid(alpha=0.3)
+        plt.colorbar(scatter1, ax=ax1, label='Cluster ID')
+
+        # Optimized
+        scatter2 = ax2.scatter(opt_df.iloc[:, 0], opt_df.iloc[:, 1],
+                              c=opt_df['cluster_id'], cmap='tab10',
+                              alpha=0.5, s=10, edgecolors='none')
+        ax2.set_xlabel('Global Active Power', fontsize=11, fontweight='bold')
+        ax2.set_ylabel('Global Reactive Power', fontsize=11, fontweight='bold')
+        ax2.set_title('K-means Clustering - Optimized', fontsize=13, fontweight='bold')
+        ax2.grid(alpha=0.3)
+        plt.colorbar(scatter2, ax=ax2, label='Cluster ID')
+
+        plt.tight_layout()
+        plt.savefig(output_path / 'clusters_comparison.png', dpi=300, bbox_inches='tight')
+        plt.close()
+
+        # 2. Distribuição de pontos por cluster
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+        naive_counts = naive_df['cluster_id'].value_counts().sort_index()
+        opt_counts = opt_df['cluster_id'].value_counts().sort_index()
+
+        ax1.bar(naive_counts.index, naive_counts.values, color='#e74c3c', alpha=0.8, edgecolor='black')
+        ax1.set_xlabel('Cluster ID', fontsize=11, fontweight='bold')
+        ax1.set_ylabel('Number of Points', fontsize=11, fontweight='bold')
+        ax1.set_title('Cluster Distribution - Naive', fontsize=13, fontweight='bold')
+        ax1.grid(axis='y', alpha=0.3)
+
+        ax2.bar(opt_counts.index, opt_counts.values, color='#2ecc71', alpha=0.8, edgecolor='black')
+        ax2.set_xlabel('Cluster ID', fontsize=11, fontweight='bold')
+        ax2.set_ylabel('Number of Points', fontsize=11, fontweight='bold')
+        ax2.set_title('Cluster Distribution - Optimized', fontsize=13, fontweight='bold')
+        ax2.grid(axis='y', alpha=0.3)
+
+        plt.tight_layout()
+        plt.savefig(output_path / 'cluster_distribution.png', dpi=300, bbox_inches='tight')
+        plt.close()
+
+        # 3. Heatmap das médias dos clusters
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+
+        # Calcular médias por cluster
+        feature_cols = [col for col in naive_df.columns if col != 'cluster_id']
+        naive_means = naive_df.groupby('cluster_id')[feature_cols].mean()
+        opt_means = opt_df.groupby('cluster_id')[feature_cols].mean()
+
+        # Normalizar para visualização
+        from sklearn.preprocessing import StandardScaler
+        scaler = StandardScaler()
+        naive_means_norm = scaler.fit_transform(naive_means)
+        opt_means_norm = scaler.fit_transform(opt_means)
+
+        im1 = ax1.imshow(naive_means_norm.T, aspect='auto', cmap='RdYlGn', interpolation='nearest')
+        ax1.set_yticks(range(len(feature_cols)))
+        ax1.set_yticklabels([col.replace('_', ' ').title() for col in feature_cols])
+        ax1.set_xticks(range(len(naive_means)))
+        ax1.set_xticklabels([f'C{i}' for i in naive_means.index])
+        ax1.set_title('Cluster Centroids (Normalized) - Naive', fontsize=13, fontweight='bold')
+        plt.colorbar(im1, ax=ax1, label='Normalized Value')
+
+        im2 = ax2.imshow(opt_means_norm.T, aspect='auto', cmap='RdYlGn', interpolation='nearest')
+        ax2.set_yticks(range(len(feature_cols)))
+        ax2.set_yticklabels([col.replace('_', ' ').title() for col in feature_cols])
+        ax2.set_xticks(range(len(opt_means)))
+        ax2.set_xticklabels([f'C{i}' for i in opt_means.index])
+        ax2.set_title('Cluster Centroids (Normalized) - Optimized', fontsize=13, fontweight='bold')
+        plt.colorbar(im2, ax=ax2, label='Normalized Value')
+
+        plt.tight_layout()
+        plt.savefig(output_path / 'cluster_centroids_heatmap.png', dpi=300, bbox_inches='tight')
+        plt.close()
+
+        return [
+            'clusters_comparison.png',
+            'cluster_distribution.png',
+            'cluster_centroids_heatmap.png'
+        ]
+
+    return []
+
 def save_analysis_markdown(results, output_file):
     """Salva análise em formato markdown"""
 

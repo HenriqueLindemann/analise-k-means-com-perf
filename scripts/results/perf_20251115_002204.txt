@@ -1,0 +1,95 @@
+=== K-means Perf Analysis ===
+Date: sáb 15 nov 2025 00:22:04 -03
+K=5, Max iterations=100, Runs=15
+P-cores: 0-7
+
+========================================
+  naive VERSION
+========================================
+1435.240
+1487.820
+1555.829
+1423.022
+1448.063
+1498.068
+1467.695
+1410.500
+1478.225
+1510.616
+1428.207
+1411.739
+1581.061
+1505.905
+1545.851
+
+ Performance counter stats for 'bin/kmeans_benchmark naive 5 100 data/dataset.bin' (15 runs):
+
+     <not counted>      cpu_atom/cycles/                                                        (0.00%)
+        6639882843      cpu_core/cycles/                                                        ( +-  0.84% )  (79.92%)
+     <not counted>      cpu_atom/instructions/                                                  (0.00%)
+       22806798269      cpu_core/instructions/           #    3.43  insn per cycle              ( +-  0.04% )  (89.96%)
+     <not counted>      cpu_atom/cache-references/                                              (0.00%)
+         146826516      cpu_core/cache-references/                                              ( +-  0.10% )  (89.96%)
+     <not counted>      cpu_atom/cache-misses/                                                  (0.00%)
+          88728296      cpu_core/cache-misses/           #   60.43% of all cache refs           ( +-  0.67% )  (90.01%)
+     <not counted>      cpu_atom/L1-dcache-loads/                                               (0.00%)
+        6757082382      cpu_core/L1-dcache-loads/                                               ( +-  0.03% )  (90.02%)
+   <not supported>      cpu_atom/L1-dcache-load-misses/                                       
+          45949813      cpu_core/L1-dcache-load-misses/  #    0.68% of all L1-dcache accesses   ( +- 21.64% )  (90.03%)
+     <not counted>      cpu_atom/LLC-loads/                                                     (0.00%)
+           5675991      cpu_core/LLC-loads/                                                     ( +- 17.27% )  (90.02%)
+     <not counted>      cpu_atom/LLC-load-misses/                                               (0.00%)
+           5220662      cpu_core/LLC-load-misses/        #   91.98% of all LL-cache accesses    ( +- 18.41% )  (90.02%)
+     <not counted>      cpu_atom/branches/                                                      (0.00%)
+        1497959131      cpu_core/branches/                                                      ( +-  0.07% )  (90.02%)
+     <not counted>      cpu_atom/branch-misses/                                                 (0.00%)
+            787955      cpu_core/branch-misses/          #    0.05% of all branches             ( +-  0.37% )  (90.00%)
+
+            1.5303 +- 0.0138 seconds time elapsed  ( +-  0.90% )
+
+
+========================================
+  optimized VERSION
+========================================
+1527.169
+1470.634
+1479.840
+1495.624
+1539.183
+1478.471
+1460.423
+1502.671
+1468.671
+1494.474
+1521.775
+1466.019
+1501.878
+1471.126
+1462.422
+
+ Performance counter stats for 'bin/kmeans_benchmark optimized 5 100 data/dataset.bin' (15 runs):
+
+     <not counted>      cpu_atom/cycles/                                                        (0.00%)
+        6664053151      cpu_core/cycles/                                                        ( +-  0.28% )  (79.97%)
+     <not counted>      cpu_atom/instructions/                                                  (0.00%)
+       26433146925      cpu_core/instructions/           #    3.97  insn per cycle              ( +-  0.01% )  (89.99%)
+     <not counted>      cpu_atom/cache-references/                                              (0.00%)
+         146181043      cpu_core/cache-references/                                              ( +-  0.05% )  (89.99%)
+     <not counted>      cpu_atom/cache-misses/                                                  (0.00%)
+          36347653      cpu_core/cache-misses/           #   24.86% of all cache refs           ( +-  0.94% )  (89.99%)
+     <not counted>      cpu_atom/L1-dcache-loads/                                               (0.00%)
+       12408890462      cpu_core/L1-dcache-loads/                                               ( +-  0.01% )  (89.99%)
+   <not supported>      cpu_atom/L1-dcache-load-misses/                                       
+          70091002      cpu_core/L1-dcache-load-misses/  #    0.56% of all L1-dcache accesses   ( +-  9.11% )  (89.99%)
+     <not counted>      cpu_atom/LLC-loads/                                                     (0.00%)
+           2057049      cpu_core/LLC-loads/                                                     ( +-  7.23% )  (89.99%)
+     <not counted>      cpu_atom/LLC-load-misses/                                               (0.00%)
+           1429342      cpu_core/LLC-load-misses/        #   69.49% of all LL-cache accesses    ( +-  8.41% )  (90.01%)
+     <not counted>      cpu_atom/branches/                                                      (0.00%)
+        1499062769      cpu_core/branches/                                                      ( +-  0.02% )  (90.06%)
+     <not counted>      cpu_atom/branch-misses/                                                 (0.00%)
+            957519      cpu_core/branch-misses/          #    0.06% of all branches             ( +-  0.29% )  (90.02%)
+
+           1.53737 +- 0.00671 seconds time elapsed  ( +-  0.44% )
+
+
