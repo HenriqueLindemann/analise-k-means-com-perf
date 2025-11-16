@@ -1,0 +1,39 @@
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     0.598 ± 0.006 seconds
+  Optimized: 0.614 ± 0.001 seconds
+  Speedup:   0.97x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      2,607,509,824   2,674,028,110       1.03x    ✗ WORSE
+Instructions                8,438,053,005   9,906,256,396       1.17x    ✗ WORSE
+IPC                                  3.24            3.70       1.14x   ✓ BETTER
+
+Cache references               45,085,285      47,726,254       1.06x    ✗ WORSE
+Cache misses                   25,927,633      12,697,549       0.49x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             2,679,822,725   3,814,870,201       1.42x    ✗ WORSE
+L1 dcache misses               20,065,078      25,365,718       1.26x    ✗ WORSE
+L1 miss rate (%)                     0.75            0.66       0.88x   ✓ BETTER
+
+Branches                      473,000,963     371,368,506       0.79x   ✓ BETTER
+Branch misses                     497,730          43,859       0.09x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 51.0% (SoA layout working!)
+✓ IPC improved by 14.5% (better instruction throughput)
+✗ L1 misses increased by 26.4% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.03x slower
