@@ -87,6 +87,24 @@ def parse_perf_output(file_path):
                 rate_str = match.group(1).replace(',', '.')
                 results[current_version]['l1_miss_rate'] = float(rate_str)
 
+            # LLC loads
+            match = re.search(r'([\d.,]+)\s+cpu_core/LLC-loads/', section)
+            if match:
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['llc_loads'] = int(value)
+
+            # LLC misses
+            match = re.search(r'([\d.,]+)\s+cpu_core/LLC-load-misses/', section)
+            if match:
+                value = match.group(1).replace('.', '').replace(',', '')
+                results[current_version]['llc_misses'] = int(value)
+
+            # LLC miss rate
+            match = re.search(r'LLC-load-misses/.*#\s+([\d.,]+)%', section)
+            if match:
+                rate_str = match.group(1).replace(',', '.')
+                results[current_version]['llc_miss_rate'] = float(rate_str)
+
             # Branches
             match = re.search(r'([\d.,]+)\s+cpu_core/branches/', section)
             if match:
@@ -185,6 +203,11 @@ def print_comparison(results):
     print_metric_float("L1 miss rate (%)", "l1_miss_rate", lower_better=True)
     print()
 
+    print_metric("LLC loads", "llc_loads", lower_better=True)
+    print_metric("LLC misses", "llc_misses", lower_better=True)
+    print_metric_float("LLC miss rate (%)", "llc_miss_rate", lower_better=True)
+    print()
+
     print_metric("Branches", "branches", lower_better=True)
     print_metric("Branch misses", "branch_misses", lower_better=True)
     print_metric_float("Branch miss rate (%)", "branch_miss_rate", lower_better=True)
@@ -218,7 +241,7 @@ def generate_graphs(results, output_dir):
     naive = results['naive']
     opt = results['optimized']
 
-    output_path = Path(output_dir)
+    output_path = Path(output_dir) / 'graphs' / 'performance'
     output_path.mkdir(parents=True, exist_ok=True)
 
     # Set style
@@ -315,7 +338,7 @@ def generate_graphs(results, output_dir):
     ax.set_yscale('log')
     ax.set_xticks(x)
     ax.set_xticklabels(metrics_for_comparison.keys(), fontsize=10, fontweight='bold')
-    ax.legend(fontsize=11, loc='upper right')
+    ax.legend(fontsize=11, loc='upper left')
     ax.grid(axis='y', alpha=0.3, which='both', linestyle='--')
 
     plt.tight_layout()
@@ -359,12 +382,226 @@ def generate_graphs(results, output_dir):
     plt.savefig(output_path / 'improvements.png', dpi=300, bbox_inches='tight')
     plt.close()
 
+    # 6. Cache Hierarchy Comparison (L1 vs LLC)
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    cache_levels = ['L1 Data Cache', 'Last Level Cache (LLC)']
+    x = np.arange(len(cache_levels))
+    width = 0.35
+
+    naive_miss_rates = [
+        naive.get('l1_miss_rate', 0),
+        naive.get('llc_miss_rate', 0)
+    ]
+    opt_miss_rates = [
+        opt.get('l1_miss_rate', 0),
+        opt.get('llc_miss_rate', 0)
+    ]
+
+    bars1 = ax.bar(x - width/2, naive_miss_rates, width,
+                   label='Naive (AoS)', color=colors[0], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+    bars2 = ax.bar(x + width/2, opt_miss_rates, width,
+                   label='Optimized (SoA)', color=colors[1], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+
+    ax.set_ylabel('Miss Rate (%) - Log Scale', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Cache Level', fontsize=12, fontweight='bold')
+    ax.set_title('Cache Hierarchy Miss Rates (Log Scale)', fontsize=14, fontweight='bold')
+    ax.set_yscale('log')
+    ax.set_xticks(x)
+    ax.set_xticklabels(cache_levels, fontsize=10, fontweight='bold')
+    ax.legend(fontsize=11, loc='upper left')
+    ax.grid(axis='y', alpha=0.3, which='both', linestyle='--')
+
+    # Add value labels
+    for bars in [bars1, bars2]:
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height * 1.02,
+                    f'{height:.2f}%',
+                    ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+    plt.tight_layout()
+    plt.savefig(output_path / 'cache_hierarchy.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+    # 7. Efficiency Metrics Dashboard
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Calculate derived metrics
+    naive_branch_accuracy = 100 - naive.get('branch_miss_rate', 0)
+    opt_branch_accuracy = 100 - opt.get('branch_miss_rate', 0)
+
+    naive_l1_hit_rate = 100 - naive.get('l1_miss_rate', 0)
+    opt_l1_hit_rate = 100 - opt.get('l1_miss_rate', 0)
+
+    naive_llc_hit_rate = 100 - naive.get('llc_miss_rate', 0)
+    opt_llc_hit_rate = 100 - opt.get('llc_miss_rate', 0)
+
+    efficiency_metrics = ['IPC\n(higher=better)', 'Branch Prediction\nAccuracy (%)',
+                         'L1 Cache\nHit Rate (%)', 'LLC\nHit Rate (%)']
+    x = np.arange(len(efficiency_metrics))
+    width = 0.35
+
+    naive_efficiency = [
+        naive.get('ipc', 0),
+        naive_branch_accuracy,
+        naive_l1_hit_rate,
+        naive_llc_hit_rate
+    ]
+    opt_efficiency = [
+        opt.get('ipc', 0),
+        opt_branch_accuracy,
+        opt_l1_hit_rate,
+        opt_llc_hit_rate
+    ]
+
+    bars1 = ax.bar(x - width/2, naive_efficiency, width,
+                   label='Naive (AoS)', color=colors[0], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+    bars2 = ax.bar(x + width/2, opt_efficiency, width,
+                   label='Optimized (SoA)', color=colors[1], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+
+    ax.set_ylabel('Value', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Efficiency Metric', fontsize=12, fontweight='bold')
+    ax.set_title('Efficiency Metrics Dashboard', fontsize=14, fontweight='bold')
+    ax.set_xticks(x)
+    ax.set_xticklabels(efficiency_metrics, fontsize=10, fontweight='bold')
+    ax.legend(fontsize=11, loc='upper left')
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.set_ylim(0, max(max(naive_efficiency), max(opt_efficiency)) * 1.15)
+
+    # Add value labels
+    for bars in [bars1, bars2]:
+        for i, bar in enumerate(bars):
+            height = bar.get_height()
+            # Different format for IPC vs percentages
+            text = f'{height:.2f}' if i == 0 else f'{height:.1f}%'
+            ax.text(bar.get_x() + bar.get_width()/2., height * 1.02,
+                    text, ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+    plt.tight_layout()
+    plt.savefig(output_path / 'efficiency_dashboard.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+    # 8. Memory Access Cost Analysis (MPKI - Misses Per Kilo Instructions)
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Calculate MPKI for different cache levels
+    naive_cache_mpki = (naive.get('cache_misses', 0) / naive.get('instructions', 1)) * 1000
+    opt_cache_mpki = (opt.get('cache_misses', 0) / opt.get('instructions', 1)) * 1000
+
+    naive_l1_mpki = (naive.get('l1_misses', 0) / naive.get('instructions', 1)) * 1000
+    opt_l1_mpki = (opt.get('l1_misses', 0) / opt.get('instructions', 1)) * 1000
+
+    naive_llc_mpki = (naive.get('llc_misses', 0) / naive.get('instructions', 1)) * 1000
+    opt_llc_mpki = (opt.get('llc_misses', 0) / opt.get('instructions', 1)) * 1000
+
+    mpki_types = ['L1 MPKI', 'LLC MPKI', 'Overall Cache MPKI']
+    x = np.arange(len(mpki_types))
+    width = 0.35
+
+    naive_mpki = [naive_l1_mpki, naive_llc_mpki, naive_cache_mpki]
+    opt_mpki = [opt_l1_mpki, opt_llc_mpki, opt_cache_mpki]
+
+    bars1 = ax.bar(x - width/2, naive_mpki, width,
+                   label='Naive (AoS)', color=colors[0], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+    bars2 = ax.bar(x + width/2, opt_mpki, width,
+                   label='Optimized (SoA)', color=colors[1], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+
+    ax.set_ylabel('MPKI (Misses Per 1000 Instructions) - Log Scale', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Cache Level', fontsize=12, fontweight='bold')
+    ax.set_title('Memory Access Cost Analysis (MPKI) - Log Scale', fontsize=14, fontweight='bold')
+    ax.set_yscale('log')
+    ax.set_xticks(x)
+    ax.set_xticklabels(mpki_types, fontsize=10, fontweight='bold')
+    ax.legend(fontsize=11, loc='upper center')
+    ax.grid(axis='y', alpha=0.3, which='both', linestyle='--')
+
+    # Add value labels
+    for bars in [bars1, bars2]:
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height * 1.02,
+                    f'{height:.2f}',
+                    ha='center', va='bottom', fontweight='bold', fontsize=9)
+
+    plt.tight_layout()
+    plt.savefig(output_path / 'memory_access_cost.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+    # 9. Instruction Mix Analysis
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Calculate derived metrics about instruction execution
+    naive_cycles_per_inst = naive.get('cycles', 1) / naive.get('instructions', 1)
+    opt_cycles_per_inst = opt.get('cycles', 1) / opt.get('instructions', 1)
+
+    naive_inst_per_cache_miss = naive.get('instructions', 1) / naive.get('cache_misses', 1)
+    opt_inst_per_cache_miss = opt.get('instructions', 1) / opt.get('cache_misses', 1)
+
+    naive_inst_per_branch = naive.get('instructions', 1) / naive.get('branches', 1)
+    opt_inst_per_branch = opt.get('instructions', 1) / opt.get('branches', 1)
+
+    inst_metrics = ['Cycles Per\nInstruction\n(lower=better)',
+                   'Instructions Per\nCache Miss\n(higher=better)',
+                   'Instructions Per\nBranch\n(neutral)']
+    x = np.arange(len(inst_metrics))
+    width = 0.35
+
+    naive_inst_analysis = [
+        naive_cycles_per_inst,
+        naive_inst_per_cache_miss,
+        naive_inst_per_branch
+    ]
+    opt_inst_analysis = [
+        opt_cycles_per_inst,
+        opt_inst_per_cache_miss,
+        opt_inst_per_branch
+    ]
+
+    bars1 = ax.bar(x - width/2, naive_inst_analysis, width,
+                   label='Naive (AoS)', color=colors[0], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+    bars2 = ax.bar(x + width/2, opt_inst_analysis, width,
+                   label='Optimized (SoA)', color=colors[1], alpha=0.8,
+                   edgecolor='black', linewidth=1.2)
+
+    ax.set_ylabel('Value - Log Scale', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Metric', fontsize=12, fontweight='bold')
+    ax.set_title('Instruction Execution Analysis (Log Scale)', fontsize=14, fontweight='bold')
+    ax.set_yscale('log')
+    ax.set_xticks(x)
+    ax.set_xticklabels(inst_metrics, fontsize=9, fontweight='bold')
+    ax.legend(fontsize=11, loc='upper right')
+    ax.grid(axis='y', alpha=0.3, which='both', linestyle='--')
+
+    # Add value labels
+    for bars in [bars1, bars2]:
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2., height * 1.02,
+                    f'{height:.2f}',
+                    ha='center', va='bottom', fontweight='bold', fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig(output_path / 'instruction_analysis.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
     return [
         'execution_time.png',
         'cache_misses.png',
         'ipc.png',
         'metrics_comparison.png',
-        'improvements.png'
+        'improvements.png',
+        'cache_hierarchy.png',
+        'efficiency_dashboard.png',
+        'memory_access_cost.png',
+        'instruction_analysis.png'
     ]
 
 def generate_cluster_visualizations(k, dataset_path, output_dir):
@@ -372,15 +609,16 @@ def generate_cluster_visualizations(k, dataset_path, output_dir):
     import subprocess
     from pathlib import Path
 
-    output_path = Path(output_dir)
+    output_path = Path(output_dir) / 'graphs' / 'clusters'
     output_path.mkdir(parents=True, exist_ok=True)
+    base_output_path = Path(output_dir)
 
     # Gerar clusters para ambas as versões
     for version in ['naive', 'optimized']:
-        cluster_file = output_path / f'clusters_{version}.csv'
+        cluster_file = base_output_path / f'clusters_{version}.csv'
 
         # Executar cluster_save
-        cmd = f'bin/cluster_save {version} {k} {dataset_path} {output_path / "clusters"}'
+        cmd = f'bin/cluster_save {version} {k} {dataset_path} {base_output_path / "clusters"}'
         result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
         if result.returncode != 0:
@@ -388,8 +626,8 @@ def generate_cluster_visualizations(k, dataset_path, output_dir):
             continue
 
     # Gerar plots combinados
-    naive_file = output_path / 'clusters_naive.csv'
-    opt_file = output_path / 'clusters_optimized.csv'
+    naive_file = base_output_path / 'clusters_naive.csv'
+    opt_file = base_output_path / 'clusters_optimized.csv'
 
     if naive_file.exists() and opt_file.exists():
         # Importar pandas para análise
@@ -534,6 +772,9 @@ def save_analysis_markdown(results, output_file):
             ('L1 dcache loads', 'l1_loads', True),
             ('L1 dcache misses', 'l1_misses', True),
             ('L1 miss rate (%)', 'l1_miss_rate', True),
+            ('LLC loads', 'llc_loads', True),
+            ('LLC misses', 'llc_misses', True),
+            ('LLC miss rate (%)', 'llc_miss_rate', True),
             ('Branches', 'branches', True),
             ('Branch misses', 'branch_misses', True),
             ('Branch miss rate (%)', 'branch_miss_rate', True),

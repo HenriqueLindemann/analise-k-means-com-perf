@@ -58,7 +58,9 @@ run_k_workflow() {
     echo "========================================"
 
     # Criar diretórios
-    mkdir -p "$K_DIR"/{graphs/performance,graphs/clusters}
+    mkdir -p "$K_DIR"
+    mkdir -p "$K_DIR/graphs/performance"
+    mkdir -p "$K_DIR/graphs/clusters"
 
     # [A] Validação
     echo "  [A] Validating correctness..."
@@ -125,23 +127,8 @@ run_k_workflow() {
     # Análise em texto
     python3 scripts/analyze_perf.py "$PERF_FILE" > "$ANALYSIS_TXT"
 
-    # Análise em markdown + gráficos
+    # Análise em markdown + gráficos (já salvos nas pastas corretas)
     python3 scripts/analyze_perf.py "$PERF_FILE" "$ANALYSIS_MD" "$K" "$DATASET" 2>&1 | grep -v "Warning:" || true
-
-    # Organizar gráficos de performance
-    sleep 1
-    for graph in execution_time cache_misses ipc metrics_comparison improvements; do
-        if [ -f "$K_DIR/${graph}.png" ]; then
-            mv "$K_DIR/${graph}.png" "$K_DIR/graphs/performance/" 2>/dev/null || true
-        fi
-    done
-
-    # Organizar gráficos de clusters
-    for graph in clusters_comparison cluster_distribution cluster_centroids_heatmap; do
-        if [ -f "$K_DIR/${graph}.png" ]; then
-            mv "$K_DIR/${graph}.png" "$K_DIR/graphs/clusters/" 2>/dev/null || true
-        fi
-    done
 
     # Mover arquivos de clusters para o diretório K
     mv scripts/results/clusters_naive.csv "$K_DIR/" 2>/dev/null || true
