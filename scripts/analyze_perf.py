@@ -223,23 +223,24 @@ def generate_graphs(results, output_dir):
 
     # Set style
     plt.style.use('seaborn-v0_8-darkgrid')
-    colors = ['#e74c3c', '#2ecc71']  # Red for naive, green for optimized
+    colors = ['#3498db', '#2ecc71']  # Blue for naive, green for optimized
 
     # 1. Execution time comparison
     fig, ax = plt.subplots(figsize=(8, 5))
-    versions = ['Naive', 'Optimized']
+    versions = ['Naive\n(AoS + compiler opts)', 'Optimized\n(SoA + compiler opts)']
     times = [naive.get('time', 0), opt.get('time', 0)]
-    bars = ax.bar(versions, times, color=colors, alpha=0.8, edgecolor='black')
-    ax.set_ylabel('Time (seconds)', fontsize=12, fontweight='bold')
+    bars = ax.bar(versions, times, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
+    ax.set_ylabel('Execution Time (seconds)', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Version', fontsize=12, fontweight='bold')
     ax.set_title('Execution Time Comparison', fontsize=14, fontweight='bold')
-    ax.grid(axis='y', alpha=0.3)
+    ax.set_ylim(0, max(times) * 1.15)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
 
-    # Add value labels on bars
     for bar in bars:
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
+        ax.text(bar.get_x() + bar.get_width()/2., height * 1.02,
                 f'{height:.3f}s',
-                ha='center', va='bottom', fontweight='bold')
+                ha='center', va='bottom', fontweight='bold', fontsize=11)
 
     plt.tight_layout()
     plt.savefig(output_path / 'execution_time.png', dpi=300, bbox_inches='tight')
@@ -248,16 +249,18 @@ def generate_graphs(results, output_dir):
     # 2. Cache misses comparison
     fig, ax = plt.subplots(figsize=(8, 5))
     cache_misses = [naive.get('cache_misses', 0) / 1e6, opt.get('cache_misses', 0) / 1e6]
-    bars = ax.bar(versions, cache_misses, color=colors, alpha=0.8, edgecolor='black')
+    bars = ax.bar(versions, cache_misses, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
     ax.set_ylabel('Cache Misses (millions)', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Version', fontsize=12, fontweight='bold')
     ax.set_title('Cache Misses Comparison', fontsize=14, fontweight='bold')
-    ax.grid(axis='y', alpha=0.3)
+    ax.set_ylim(0, max(cache_misses) * 1.15)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
 
     for bar in bars:
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
+        ax.text(bar.get_x() + bar.get_width()/2., height * 1.02,
                 f'{height:.1f}M',
-                ha='center', va='bottom', fontweight='bold')
+                ha='center', va='bottom', fontweight='bold', fontsize=11)
 
     plt.tight_layout()
     plt.savefig(output_path / 'cache_misses.png', dpi=300, bbox_inches='tight')
@@ -266,30 +269,33 @@ def generate_graphs(results, output_dir):
     # 3. IPC comparison
     fig, ax = plt.subplots(figsize=(8, 5))
     ipc_values = [naive.get('ipc', 0), opt.get('ipc', 0)]
-    bars = ax.bar(versions, ipc_values, color=colors, alpha=0.8, edgecolor='black')
+    bars = ax.bar(versions, ipc_values, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
     ax.set_ylabel('IPC (Instructions Per Cycle)', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Version', fontsize=12, fontweight='bold')
     ax.set_title('IPC Comparison', fontsize=14, fontweight='bold')
-    ax.grid(axis='y', alpha=0.3)
+    ax.set_ylim(0, max(ipc_values) * 1.15)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
 
     for bar in bars:
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height,
+        ax.text(bar.get_x() + bar.get_width()/2., height * 1.02,
                 f'{height:.2f}',
-                ha='center', va='bottom', fontweight='bold')
+                ha='center', va='bottom', fontweight='bold', fontsize=11)
 
     plt.tight_layout()
     plt.savefig(output_path / 'ipc.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-    # 4. Multi-metric comparison (normalized)
-    fig, ax = plt.subplots(figsize=(12, 6))
+    # 4. Multi-metric comparison (LOG scale)
+    fig, ax = plt.subplots(figsize=(12, 7))
 
     metrics_for_comparison = {
-        'Time': (naive.get('time', 1), opt.get('time', 1)),
-        'Cycles': (naive.get('cycles', 1) / 1e9, opt.get('cycles', 1) / 1e9),
-        'Cache Misses': (naive.get('cache_misses', 1) / 1e6, opt.get('cache_misses', 1) / 1e6),
-        'L1 Misses': (naive.get('l1_misses', 1) / 1e6, opt.get('l1_misses', 1) / 1e6),
-        'Cache Miss Rate': (naive.get('cache_miss_rate', 1), opt.get('cache_miss_rate', 1)),
+        'Time\n(s)': (naive.get('time', 1), opt.get('time', 1)),
+        'Cycles\n(billions)': (naive.get('cycles', 1) / 1e9, opt.get('cycles', 1) / 1e9),
+        'Instructions\n(billions)': (naive.get('instructions', 1) / 1e9, opt.get('instructions', 1) / 1e9),
+        'Cache Misses\n(millions)': (naive.get('cache_misses', 1) / 1e6, opt.get('cache_misses', 1) / 1e6),
+        'L1 Misses\n(millions)': (naive.get('l1_misses', 1) / 1e6, opt.get('l1_misses', 1) / 1e6),
+        'Branches\n(millions)': (naive.get('branches', 1) / 1e6, opt.get('branches', 1) / 1e6),
     }
 
     x = np.arange(len(metrics_for_comparison))
@@ -298,30 +304,33 @@ def generate_graphs(results, output_dir):
     naive_vals = [v[0] for v in metrics_for_comparison.values()]
     opt_vals = [v[1] for v in metrics_for_comparison.values()]
 
-    bars1 = ax.bar(x - width/2, naive_vals, width, label='Naive',
-                   color=colors[0], alpha=0.8, edgecolor='black')
-    bars2 = ax.bar(x + width/2, opt_vals, width, label='Optimized',
-                   color=colors[1], alpha=0.8, edgecolor='black')
+    bars1 = ax.bar(x - width/2, naive_vals, width, label='Naive (AoS)',
+                   color=colors[0], alpha=0.8, edgecolor='black', linewidth=1.2)
+    bars2 = ax.bar(x + width/2, opt_vals, width, label='Optimized (SoA)',
+                   color=colors[1], alpha=0.8, edgecolor='black', linewidth=1.2)
 
-    ax.set_ylabel('Value', fontsize=12, fontweight='bold')
-    ax.set_title('Performance Metrics Comparison', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Value (log scale)', fontsize=12, fontweight='bold')
+    ax.set_xlabel('Metric', fontsize=12, fontweight='bold')
+    ax.set_title('Performance Metrics Comparison (Log Scale)', fontsize=14, fontweight='bold')
+    ax.set_yscale('log')
     ax.set_xticks(x)
-    ax.set_xticklabels(metrics_for_comparison.keys(), rotation=15, ha='right')
-    ax.legend(fontsize=11)
-    ax.grid(axis='y', alpha=0.3)
+    ax.set_xticklabels(metrics_for_comparison.keys(), fontsize=10, fontweight='bold')
+    ax.legend(fontsize=11, loc='upper right')
+    ax.grid(axis='y', alpha=0.3, which='both', linestyle='--')
 
     plt.tight_layout()
     plt.savefig(output_path / 'metrics_comparison.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-    # 5. Speedup/improvement summary
+    # 5. Speedup/improvement summary (FIXED for negative bars)
     fig, ax = plt.subplots(figsize=(10, 6))
 
     improvements = {
         'Execution Time': ((naive.get('time', 1) - opt.get('time', 1)) / naive.get('time', 1) * 100),
-        'Cache Misses': ((naive.get('cache_misses', 1) - opt.get('cache_misses', 1)) / naive.get('cache_misses', 1) * 100),
-        'IPC': ((opt.get('ipc', 0) - naive.get('ipc', 1)) / naive.get('ipc', 1) * 100),
         'Cycles': ((naive.get('cycles', 1) - opt.get('cycles', 1)) / naive.get('cycles', 1) * 100),
+        'Instructions': ((naive.get('instructions', 1) - opt.get('instructions', 1)) / naive.get('instructions', 1) * 100),
+        'Cache Misses': ((naive.get('cache_misses', 1) - opt.get('cache_misses', 1)) / naive.get('cache_misses', 1) * 100),
+        'Branches': ((naive.get('branches', 1) - opt.get('branches', 1)) / naive.get('branches', 1) * 100),
     }
 
     metrics_names = list(improvements.keys())
@@ -329,15 +338,22 @@ def generate_graphs(results, output_dir):
     colors_improvement = ['#2ecc71' if v > 0 else '#e74c3c' for v in improvement_values]
 
     bars = ax.barh(metrics_names, improvement_values, color=colors_improvement,
-                   alpha=0.8, edgecolor='black')
+                   alpha=0.8, edgecolor='black', linewidth=1.2)
     ax.set_xlabel('Improvement (%)', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Metric', fontsize=12, fontweight='bold')
     ax.set_title('Performance Improvements (Optimized vs Naive)', fontsize=14, fontweight='bold')
-    ax.axvline(x=0, color='black', linestyle='-', linewidth=0.8)
-    ax.grid(axis='x', alpha=0.3)
+    ax.axvline(x=0, color='black', linestyle='-', linewidth=1.5)
+    ax.grid(axis='x', alpha=0.3, linestyle='--')
+
+    # Set xlim to prevent overlap with y-axis labels
+    max_abs = max(abs(min(improvement_values)), abs(max(improvement_values)))
+    ax.set_xlim(-max_abs * 1.2, max_abs * 1.2)
 
     for i, (bar, val) in enumerate(zip(bars, improvement_values)):
-        ax.text(val + (2 if val > 0 else -2), i, f'{val:+.1f}%',
-                ha='left' if val > 0 else 'right', va='center', fontweight='bold')
+        # Position text outside the bar
+        offset = max_abs * 0.03
+        ax.text(val + (offset if val > 0 else -offset), i, f'{val:+.1f}%',
+                ha='left' if val > 0 else 'right', va='center', fontweight='bold', fontsize=10)
 
     plt.tight_layout()
     plt.savefig(output_path / 'improvements.png', dpi=300, bbox_inches='tight')
