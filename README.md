@@ -58,20 +58,39 @@ typedef struct {
 
 ## Quick Start
 
+### Análise para um único K
+
 ```bash
-# Pipeline completo automático (recomendado)
-./run_full_analysis.sh 5 100 15
+# Pipeline completo para K=5 (100 iterações, 15 execuções)
+./run_full_analysis.sh "5" 100 15
 
 # Resultados em:
-# scripts/results/run_TIMESTAMP/
+# scripts/results/run_TIMESTAMP/k5/
 # scripts/results/latest/  (symlink para última execução)
+```
+
+### Análise comparativa com múltiplos K
+
+```bash
+# Comparar K=2,3,4,5,6,7 (100 iterações, 10 execuções por K)
+./run_full_analysis.sh "2 3 4 5 6 7" 100 10
+
+# Análise completa K=2 a K=10
+./run_full_analysis.sh "2 3 4 5 6 7 8 9 10" 100 15
+
+# Formato: <K_values> <iterations> <runs_per_K>
 ```
 
 **Ver resultados:**
 ```bash
-cat scripts/results/latest/analysis.txt        # Análise completa
-cat scripts/results/latest/validation.txt      # Validação de corretude
-xdg-open scripts/results/latest/graphs/        # Visualizações
+# Para um único K
+cat scripts/results/latest/k5/analysis.txt
+cat scripts/results/latest/k5/validation.txt
+xdg-open scripts/results/latest/k5/graphs/
+
+# Para múltiplos K (análise comparativa)
+cat scripts/results/latest/k_comparison/k_analysis.txt
+xdg-open scripts/results/latest/k_comparison/graphs/
 ```
 
 ## Pipeline Automatizado
@@ -116,31 +135,58 @@ Gera automaticamente:
 - 3 gráficos de clustering
 - Organiza tudo em estrutura de pastas
 
+Se múltiplos K forem especificados, gera também análise comparativa com 7 gráficos mostrando métricas em função de K.
+
 ## Estrutura de Resultados
 
-Cada execução cria uma pasta com timestamp:
+### Para um único K
 
 ```
 scripts/results/
-├── run_20251115_120000/
-│   ├── validation.txt              # Resultado da validação
-│   ├── perf_raw.txt                # Raw output do perf stat
-│   ├── analysis.txt                # Análise em texto
-│   ├── analysis.md                 # Relatório markdown
-│   ├── clusters_naive.csv          # Clusters (naive)
-│   ├── clusters_optimized.csv      # Clusters (optimized)
-│   └── graphs/
-│       ├── performance/
-│       │   ├── execution_time.png
-│       │   ├── cache_misses.png
-│       │   ├── ipc.png
-│       │   ├── metrics_comparison.png
-│       │   └── improvements.png
-│       └── clusters/
-│           ├── clusters_comparison.png
-│           ├── cluster_distribution.png
-│           └── cluster_centroids_heatmap.png
-└── latest -> run_20251115_120000   # Symlink para última execução
+├── run_TIMESTAMP/
+│   └── k5/                         # Resultados para K=5
+│       ├── validation.txt          # Validação de corretude
+│       ├── perf_raw.txt            # Raw output do perf stat
+│       ├── analysis.txt            # Análise em texto
+│       ├── analysis.md             # Relatório markdown
+│       ├── clusters_naive.csv
+│       ├── clusters_optimized.csv
+│       └── graphs/
+│           ├── performance/        # 5 gráficos de performance
+│           │   ├── execution_time.png
+│           │   ├── cache_misses.png
+│           │   ├── ipc.png
+│           │   ├── metrics_comparison.png
+│           │   └── improvements.png
+│           └── clusters/           # 3 gráficos de clustering
+│               ├── clusters_comparison.png
+│               ├── cluster_distribution.png
+│               └── cluster_centroids_heatmap.png
+└── latest -> run_TIMESTAMP
+```
+
+### Para múltiplos K (análise comparativa)
+
+```
+scripts/results/
+├── run_TIMESTAMP/
+│   ├── k2/                         # Resultados individuais K=2
+│   │   └── (mesma estrutura acima)
+│   ├── k4/                         # Resultados individuais K=4
+│   ├── k5/                         # Resultados individuais K=5
+│   ├── k6/                         # Resultados individuais K=6
+│   ├── k7/                         # Resultados individuais K=7
+│   └── k_comparison/               # Análise comparativa entre K
+│       ├── k_analysis.txt          # Comparação detalhada
+│       └── graphs/                 # 7 gráficos comparativos
+│           ├── time_vs_k.png       # Tempo vs K
+│           ├── cycles_vs_k.png     # Ciclos vs K
+│           ├── cache_misses_vs_k.png
+│           ├── ipc_vs_k.png
+│           ├── branches_vs_k.png
+│           ├── speedup_vs_k.png    # Speedup vs K
+│           └── all_metrics_vs_k.png # Todas métricas (6 subplots)
+└── latest -> run_TIMESTAMP
 ```
 
 ## Estrutura do Projeto
@@ -150,16 +196,67 @@ scripts/results/
 ├── bin/                        # Binários compilados
 ├── src/                        # Implementações C
 │   ├── kmeans_naive.c         # Versão AoS
-│   ├── kmeans_optimized.c     # Versão SoA
+│   ├── kmeans_optimized.c     # Versão SoA (com unrolling para K=5)
 │   ├── data_loader.c          # Carregamento de datasets
+│   ├── validate_results.c     # Validação de corretude
 │   └── ...
 ├── include/                    # Headers
 ├── scripts/                    # Automação e análise
 │   ├── run_full_analysis.sh   # Pipeline completo
-│   ├── analyze_perf.py        # Análise de métricas
+│   ├── analyze_perf.py        # Análise de métricas (parsing de perf)
+│   ├── analyze_k_comparison.py # Análise comparativa de K
 │   └── ...
 ├── data/                       # Datasets binários
 └── Makefile
+```
+
+## Exemplos de Uso
+
+### Teste rápido (5 execuções)
+
+```bash
+# Testar apenas K=5 com 5 execuções rápidas
+./run_full_analysis.sh "5" 100 5
+```
+
+### Análise completa de K=2 a K=10
+
+```bash
+# Análise abrangente com 15 execuções por K
+./run_full_analysis.sh "2 3 4 5 6 7 8 9 10" 100 15
+
+# Ver comparação geral
+cat scripts/results/latest/k_comparison/k_analysis.txt
+
+# Ver gráfico de speedup vs K
+xdg-open scripts/results/latest/k_comparison/graphs/speedup_vs_k.png
+```
+
+### Comparar apenas alguns K específicos
+
+```bash
+# Testar K=3, K=5 e K=7 (valores ímpares)
+./run_full_analysis.sh "3 5 7" 100 10
+
+# Testar K=2, K=4, K=6 (valores pares)
+./run_full_analysis.sh "2 4 6" 100 10
+```
+
+### Análise detalhada para K específico
+
+```bash
+# Rodar apenas K=5 com muitas execuções para alta precisão
+./run_full_analysis.sh "5" 100 20
+
+# Ver análise detalhada
+cat scripts/results/latest/k5/analysis.txt
+
+# Ver validação
+cat scripts/results/latest/k5/validation.txt
+
+# Abrir todos os gráficos
+xdg-open scripts/results/latest/k5/graphs/performance/
+xdg-open scripts/results/latest/k5/graphs/clusters/
 ```
 
 ## Executar Passos Manualmente

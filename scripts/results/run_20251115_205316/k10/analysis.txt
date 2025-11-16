@@ -1,0 +1,39 @@
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     5.595 ± 0.033 seconds
+  Optimized: 5.591 ± 0.032 seconds
+  Speedup:   1.00x ✓ FASTER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                     16,166,842,212  16,327,792,184       1.01x    ✗ WORSE
+Instructions               51,696,654,383  54,648,057,047       1.06x    ✗ WORSE
+IPC                                  3.20            3.35       1.05x   ✓ BETTER
+
+Cache references              209,572,681     204,273,909       0.97x   ✓ BETTER
+Cache misses                  117,768,685      66,422,689       0.56x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads            16,379,311,030  20,255,016,980       1.24x    ✗ WORSE
+L1 dcache misses               11,367,312      87,711,844       7.72x    ✗ WORSE
+L1 miss rate (%)                     0.07            0.43       6.14x    ✗ WORSE
+
+Branches                    2,342,166,039   1,741,710,039       0.74x   ✓ BETTER
+Branch misses                   1,014,140         229,090       0.23x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 43.6% (SoA layout working!)
+✓ IPC improved by 4.7% (better instruction throughput)
+✗ L1 misses increased by 671.6% (SoA spread across more cache lines)
+✓ Overall speedup: 1.00x faster

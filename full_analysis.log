@@ -1,0 +1,658 @@
+========================================
+  K-means Complete Analysis Pipeline
+========================================
+K values: 2 3 4 5 6 7 8 9 10
+Iterations: 100, Runs per K: 10
+Results directory: scripts/results/run_20251115_205316
+
+[1/3] Binaries already compiled
+[2/3] Dataset already processed
+
+[3/3] Running analysis for each K value...
+
+========================================
+  Processing K=2
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=2
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     0.143 ± 0.002 seconds
+  Optimized: 0.146 ± 0.003 seconds
+  Speedup:   0.97x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                        514,604,521     519,043,196       1.01x    ✗ WORSE
+Instructions                1,382,527,026   1,653,416,711       1.20x    ✗ WORSE
+IPC                                  2.69            3.19       1.19x   ✓ BETTER
+
+Cache references               13,690,680      13,965,341       1.02x    ✗ WORSE
+Cache misses                   10,933,378       6,736,730       0.62x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads               404,803,863     665,417,348       1.64x    ✗ WORSE
+L1 dcache misses                1,161,405       5,293,482       4.56x    ✗ WORSE
+L1 miss rate (%)                     0.29            0.80       2.76x    ✗ WORSE
+
+Branches                      162,824,846     132,344,447       0.81x   ✓ BETTER
+Branch misses                      71,416          51,986       0.73x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 38.4% (SoA layout working!)
+✓ IPC improved by 18.6% (better instruction throughput)
+✗ L1 misses increased by 355.8% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.03x slower
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k2/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k2/execution_time.png
+  - scripts/results/run_20251115_205316/k2/cache_misses.png
+  - scripts/results/run_20251115_205316/k2/ipc.png
+  - scripts/results/run_20251115_205316/k2/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k2/improvements.png
+
+Generating cluster visualizations (K=2)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k2/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k2/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k2/cluster_centroids_heatmap.png
+      ✓ K=2 complete
+
+========================================
+  Processing K=3
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=3
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     0.182 ± 0.003 seconds
+  Optimized: 0.193 ± 0.003 seconds
+  Speedup:   0.94x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                        658,040,789     687,257,869       1.04x    ✗ WORSE
+Instructions                1,823,490,985   2,168,335,063       1.19x    ✗ WORSE
+IPC                                  2.77            3.16       1.14x   ✓ BETTER
+
+Cache references               15,853,741      16,110,765       1.02x    ✗ WORSE
+Cache misses                   12,123,391       7,235,222       0.60x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads               556,875,173     876,930,479       1.57x    ✗ WORSE
+L1 dcache misses                1,311,040       6,127,059       4.67x    ✗ WORSE
+L1 miss rate (%)                     0.24            0.70       2.92x    ✗ WORSE
+
+Branches                      177,608,428     142,220,063       0.80x   ✓ BETTER
+Branch misses                      77,724          54,783       0.70x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 40.3% (SoA layout working!)
+✓ IPC improved by 13.9% (better instruction throughput)
+✗ L1 misses increased by 367.3% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.06x slower
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k3/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k3/execution_time.png
+  - scripts/results/run_20251115_205316/k3/cache_misses.png
+  - scripts/results/run_20251115_205316/k3/ipc.png
+  - scripts/results/run_20251115_205316/k3/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k3/improvements.png
+
+Generating cluster visualizations (K=3)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k3/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k3/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k3/cluster_centroids_heatmap.png
+      ✓ K=3 complete
+
+========================================
+  Processing K=4
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=4
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     0.415 ± 0.005 seconds
+  Optimized: 0.416 ± 0.005 seconds
+  Speedup:   1.00x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      1,443,376,544   1,464,384,928       1.01x    ✗ WORSE
+Instructions                4,203,284,177   4,963,604,768       1.18x    ✗ WORSE
+IPC                                  2.91            3.39       1.16x   ✓ BETTER
+
+Cache references               32,568,751      32,856,495       1.01x    ✗ WORSE
+Cache misses                   23,831,471      13,004,854       0.55x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             1,297,515,955   1,986,690,893       1.53x    ✗ WORSE
+L1 dcache misses                2,059,825      11,264,784       5.47x    ✗ WORSE
+L1 miss rate (%)                     0.16            0.57       3.56x    ✗ WORSE
+
+Branches                      328,003,462     247,837,704       0.76x   ✓ BETTER
+Branch misses                     551,249          62,895       0.11x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 45.4% (SoA layout working!)
+✓ IPC improved by 16.4% (better instruction throughput)
+✗ L1 misses increased by 446.9% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.00x slower
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k4/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k4/execution_time.png
+  - scripts/results/run_20251115_205316/k4/cache_misses.png
+  - scripts/results/run_20251115_205316/k4/ipc.png
+  - scripts/results/run_20251115_205316/k4/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k4/improvements.png
+
+Generating cluster visualizations (K=4)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k4/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k4/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k4/cluster_centroids_heatmap.png
+      ✓ K=4 complete
+
+========================================
+  Processing K=5
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=5
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     2.008 ± 0.028 seconds
+  Optimized: 0.891 ± 0.009 seconds
+  Speedup:   2.25x ✓ FASTER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      6,362,220,807   2,779,927,959       0.44x   ✓ BETTER
+Instructions               20,234,530,196   7,896,038,152       0.39x   ✓ BETTER
+IPC                                  3.18            2.84       0.89x    ✗ WORSE
+
+Cache references              143,720,414     144,889,016       1.01x    ✗ WORSE
+Cache misses                   93,541,663      49,170,968       0.53x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             6,513,599,027   4,217,299,659       0.65x   ✓ BETTER
+L1 dcache misses                6,666,172      41,096,402       6.16x    ✗ WORSE
+L1 miss rate (%)                     0.10            0.97       9.70x    ✗ WORSE
+
+Branches                    1,226,845,528     167,893,613       0.14x   ✓ BETTER
+Branch misses                     853,969          73,443       0.09x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 47.4% (SoA layout working!)
+✗ L1 misses increased by 516.5% (SoA spread across more cache lines)
+✓ Overall speedup: 2.25x faster
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k5/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k5/execution_time.png
+  - scripts/results/run_20251115_205316/k5/cache_misses.png
+  - scripts/results/run_20251115_205316/k5/ipc.png
+  - scripts/results/run_20251115_205316/k5/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k5/improvements.png
+
+Generating cluster visualizations (K=5)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k5/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k5/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k5/cluster_centroids_heatmap.png
+      ✓ K=5 complete
+
+========================================
+  Processing K=6
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=6
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     1.510 ± 0.011 seconds
+  Optimized: 1.566 ± 0.010 seconds
+  Speedup:   0.96x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      4,864,112,887   5,028,767,991       1.03x    ✗ WORSE
+Instructions               15,499,260,369  17,351,408,408       1.12x    ✗ WORSE
+IPC                                  3.19            3.45       1.08x   ✓ BETTER
+
+Cache references               93,743,568      92,302,337       0.98x   ✓ BETTER
+Cache misses                   59,049,457      25,979,975       0.44x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             4,880,827,077   6,753,359,099       1.38x    ✗ WORSE
+L1 dcache misses                5,243,656      39,361,928       7.51x    ✗ WORSE
+L1 miss rate (%)                     0.11            0.58       5.27x    ✗ WORSE
+
+Branches                      911,032,332     652,868,526       0.72x   ✓ BETTER
+Branch misses                     878,285          90,565       0.10x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 56.0% (SoA layout working!)
+✓ IPC improved by 8.3% (better instruction throughput)
+✗ L1 misses increased by 650.7% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.04x slower
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k6/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k6/execution_time.png
+  - scripts/results/run_20251115_205316/k6/cache_misses.png
+  - scripts/results/run_20251115_205316/k6/ipc.png
+  - scripts/results/run_20251115_205316/k6/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k6/improvements.png
+
+Generating cluster visualizations (K=6)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k6/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k6/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k6/cluster_centroids_heatmap.png
+      ✓ K=6 complete
+
+========================================
+  Processing K=7
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=7
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     0.921 ± 0.022 seconds
+  Optimized: 1.087 ± 0.015 seconds
+  Speedup:   0.85x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      2,729,428,544   3,021,487,464       1.11x    ✗ WORSE
+Instructions                8,442,266,469   9,914,742,736       1.17x    ✗ WORSE
+IPC                                  3.09            3.28       1.06x   ✓ BETTER
+
+Cache references               45,550,263      48,105,577       1.06x    ✗ WORSE
+Cache misses                   27,591,408      17,349,930       0.63x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             2,682,590,924   3,817,258,211       1.42x    ✗ WORSE
+L1 dcache misses                3,004,709      21,554,613       7.17x    ✗ WORSE
+L1 miss rate (%)                     0.11            0.56       5.09x    ✗ WORSE
+
+Branches                      473,733,225     372,604,773       0.79x   ✓ BETTER
+Branch misses                     543,238          86,736       0.16x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 37.1% (SoA layout working!)
+✓ IPC improved by 6.1% (better instruction throughput)
+✗ L1 misses increased by 617.4% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.18x slower
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k7/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k7/execution_time.png
+  - scripts/results/run_20251115_205316/k7/cache_misses.png
+  - scripts/results/run_20251115_205316/k7/ipc.png
+  - scripts/results/run_20251115_205316/k7/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k7/improvements.png
+
+Generating cluster visualizations (K=7)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k7/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k7/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k7/cluster_centroids_heatmap.png
+      ✓ K=7 complete
+
+========================================
+  Processing K=8
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=8
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     3.440 ± 0.035 seconds
+  Optimized: 3.314 ± 0.132 seconds
+  Speedup:   1.04x ✓ FASTER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      9,947,466,074  10,729,192,401       1.08x    ✗ WORSE
+Instructions               31,590,686,964  37,094,839,872       1.17x    ✗ WORSE
+IPC                                  3.18            3.46       1.09x   ✓ BETTER
+
+Cache references              153,514,571     162,772,017       1.06x    ✗ WORSE
+Cache misses                   89,661,939      48,745,538       0.54x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             9,992,735,583  14,044,826,627       1.41x    ✗ WORSE
+L1 dcache misses                9,059,229      69,856,322       7.71x    ✗ WORSE
+L1 miss rate (%)                     0.09            0.50       5.56x    ✗ WORSE
+
+Branches                    1,592,165,072   1,252,229,110       0.79x   ✓ BETTER
+Branch misses                   1,259,905         133,528       0.11x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 45.6% (SoA layout working!)
+✓ IPC improved by 8.9% (better instruction throughput)
+✗ L1 misses increased by 671.1% (SoA spread across more cache lines)
+✓ Overall speedup: 1.04x faster
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k8/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k8/execution_time.png
+  - scripts/results/run_20251115_205316/k8/cache_misses.png
+  - scripts/results/run_20251115_205316/k8/ipc.png
+  - scripts/results/run_20251115_205316/k8/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k8/improvements.png
+
+Generating cluster visualizations (K=8)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k8/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k8/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k8/cluster_centroids_heatmap.png
+      ✓ K=8 complete
+
+========================================
+  Processing K=9
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=9
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     5.195 ± 0.032 seconds
+  Optimized: 4.397 ± 0.020 seconds
+  Speedup:   1.18x ✓ FASTER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                     15,058,543,010  12,814,742,086       0.85x   ✓ BETTER
+Instructions               47,655,630,362  42,659,628,875       0.90x   ✓ BETTER
+IPC                                  3.16            3.33       1.05x   ✓ BETTER
+
+Cache references              214,472,932     174,022,712       0.81x   ✓ BETTER
+Cache misses                  123,420,345      56,712,351       0.46x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads            15,286,794,704  16,120,549,045       1.05x    ✗ WORSE
+L1 dcache misses               12,085,231      76,143,422       6.30x    ✗ WORSE
+L1 miss rate (%)                     0.08            0.47       5.87x    ✗ WORSE
+
+Branches                    2,186,618,596   1,330,373,472       0.61x   ✓ BETTER
+Branch misses                   1,201,137         181,670       0.15x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 54.0% (SoA layout working!)
+✓ IPC improved by 5.2% (better instruction throughput)
+✗ L1 misses increased by 530.1% (SoA spread across more cache lines)
+✓ Overall speedup: 1.18x faster
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k9/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k9/execution_time.png
+  - scripts/results/run_20251115_205316/k9/cache_misses.png
+  - scripts/results/run_20251115_205316/k9/ipc.png
+  - scripts/results/run_20251115_205316/k9/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k9/improvements.png
+
+Generating cluster visualizations (K=9)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k9/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k9/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k9/cluster_centroids_heatmap.png
+      ✓ K=9 complete
+
+========================================
+  Processing K=10
+========================================
+  [A] Validating correctness...
+      ✓ Validation passed for K=10
+  [B] Running benchmark with perf...
+      Running naive...
+      Running optimized...
+  [C] Generating analysis and visualizations...
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     5.595 ± 0.033 seconds
+  Optimized: 5.591 ± 0.032 seconds
+  Speedup:   1.00x ✓ FASTER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                     16,166,842,212  16,327,792,184       1.01x    ✗ WORSE
+Instructions               51,696,654,383  54,648,057,047       1.06x    ✗ WORSE
+IPC                                  3.20            3.35       1.05x   ✓ BETTER
+
+Cache references              209,572,681     204,273,909       0.97x   ✓ BETTER
+Cache misses                  117,768,685      66,422,689       0.56x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads            16,379,311,030  20,255,016,980       1.24x    ✗ WORSE
+L1 dcache misses               11,367,312      87,711,844       7.72x    ✗ WORSE
+L1 miss rate (%)                     0.07            0.43       6.14x    ✗ WORSE
+
+Branches                    2,342,166,039   1,741,710,039       0.74x   ✓ BETTER
+Branch misses                   1,014,140         229,090       0.23x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 43.6% (SoA layout working!)
+✓ IPC improved by 4.7% (better instruction throughput)
+✗ L1 misses increased by 671.6% (SoA spread across more cache lines)
+✓ Overall speedup: 1.00x faster
+
+Markdown analysis saved to: scripts/results/run_20251115_205316/k10/analysis.md
+
+Graphs generated:
+  - scripts/results/run_20251115_205316/k10/execution_time.png
+  - scripts/results/run_20251115_205316/k10/cache_misses.png
+  - scripts/results/run_20251115_205316/k10/ipc.png
+  - scripts/results/run_20251115_205316/k10/metrics_comparison.png
+  - scripts/results/run_20251115_205316/k10/improvements.png
+
+Generating cluster visualizations (K=10)...
+
+Cluster visualizations generated:
+  - scripts/results/run_20251115_205316/k10/clusters_comparison.png
+  - scripts/results/run_20251115_205316/k10/cluster_distribution.png
+  - scripts/results/run_20251115_205316/k10/cluster_centroids_heatmap.png
+      ✓ K=10 complete
+
+========================================
+  Generating K Comparison Analysis
+========================================
+Analyzing K comparison for: ['2', '3', '4', '5', '6', '7', '8', '9', '10']
+  Processing K=2...
+  Processing K=3...
+  Processing K=4...
+  Processing K=5...
+  Processing K=6...
+  Processing K=7...
+  Processing K=8...
+  Processing K=9...
+  Processing K=10...
+
+Text analysis saved to: scripts/results/run_20251115_205316/k_comparison/k_analysis.txt
+
+Comparison graphs generated:
+  - scripts/results/run_20251115_205316/k_comparison/graphs/time_vs_k.png
+  - scripts/results/run_20251115_205316/k_comparison/graphs/cycles_vs_k.png
+  - scripts/results/run_20251115_205316/k_comparison/graphs/cache_misses_vs_k.png
+  - scripts/results/run_20251115_205316/k_comparison/graphs/ipc_vs_k.png
+  - scripts/results/run_20251115_205316/k_comparison/graphs/branches_vs_k.png
+  - scripts/results/run_20251115_205316/k_comparison/graphs/speedup_vs_k.png
+  - scripts/results/run_20251115_205316/k_comparison/graphs/all_metrics_vs_k.png
+
+K comparison analysis complete!
+  ✓ Comparison analysis complete
+
+
+========================================
+  Pipeline Complete!
+========================================
+
+Results saved to: scripts/results/run_20251115_205316
+
+Generated files:
+  - K=2 results:       scripts/results/run_20251115_205316/k2/
+  - K=3 results:       scripts/results/run_20251115_205316/k3/
+  - K=4 results:       scripts/results/run_20251115_205316/k4/
+  - K=5 results:       scripts/results/run_20251115_205316/k5/
+  - K=6 results:       scripts/results/run_20251115_205316/k6/
+  - K=7 results:       scripts/results/run_20251115_205316/k7/
+  - K=8 results:       scripts/results/run_20251115_205316/k8/
+  - K=9 results:       scripts/results/run_20251115_205316/k9/
+  - K=10 results:       scripts/results/run_20251115_205316/k10/
+  - K comparison:       scripts/results/run_20251115_205316/k_comparison/
+
+Quick view:
+  cat scripts/results/run_20251115_205316/k_comparison/k_analysis.txt
+
+Latest results always at:
+  scripts/results/latest/
+

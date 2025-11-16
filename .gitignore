@@ -13,6 +13,7 @@ build/
 # Dados
 data/*.bin
 
+
 # Manter apenas README da estrutura
 !scripts/results/README.md
 

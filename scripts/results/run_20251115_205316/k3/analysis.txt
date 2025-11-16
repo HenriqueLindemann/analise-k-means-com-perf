@@ -1,0 +1,39 @@
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     0.182 ± 0.003 seconds
+  Optimized: 0.193 ± 0.003 seconds
+  Speedup:   0.94x ✗ SLOWER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                        658,040,789     687,257,869       1.04x    ✗ WORSE
+Instructions                1,823,490,985   2,168,335,063       1.19x    ✗ WORSE
+IPC                                  2.77            3.16       1.14x   ✓ BETTER
+
+Cache references               15,853,741      16,110,765       1.02x    ✗ WORSE
+Cache misses                   12,123,391       7,235,222       0.60x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads               556,875,173     876,930,479       1.57x    ✗ WORSE
+L1 dcache misses                1,311,040       6,127,059       4.67x    ✗ WORSE
+L1 miss rate (%)                     0.24            0.70       2.92x    ✗ WORSE
+
+Branches                      177,608,428     142,220,063       0.80x   ✓ BETTER
+Branch misses                      77,724          54,783       0.70x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 40.3% (SoA layout working!)
+✓ IPC improved by 13.9% (better instruction throughput)
+✗ L1 misses increased by 367.3% (SoA spread across more cache lines)
+✗ Overall slowdown: 1.06x slower

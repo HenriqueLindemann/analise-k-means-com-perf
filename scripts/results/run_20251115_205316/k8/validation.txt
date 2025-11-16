@@ -1,0 +1,50 @@
+========================================
+  K-means Validation
+========================================
+K=8, Max iterations=100
+Dataset: data/dataset.bin
+
+[1/6] Loading dataset for NAIVE version...
+  Loaded 2049280 points
+[2/6] Running NAIVE K-means...
+  Naive inertia: 49468460.00
+[3/6] Loading dataset for OPTIMIZED version...
+  Loaded 2049280 points
+[4/6] Running OPTIMIZED K-means...
+  Optimized inertia: 49468480.00
+[5/6] Comparing results...
+
+=== Comparing Centroids ===
+  Naive cluster 0 <-> Optimized cluster 0: distance = 0.000016 ✓
+  Naive cluster 1 <-> Optimized cluster 1: distance = 0.000000 ✓
+  Naive cluster 2 <-> Optimized cluster 2: distance = 0.000000 ✓
+  Naive cluster 3 <-> Optimized cluster 3: distance = 0.000000 ✓
+  Naive cluster 4 <-> Optimized cluster 4: distance = 0.000015 ✓
+  Naive cluster 5 <-> Optimized cluster 5: distance = 0.000031 ✓
+  Naive cluster 6 <-> Optimized cluster 6: distance = 0.000017 ✓
+  Naive cluster 7 <-> Optimized cluster 7: distance = 0.000046 ✓
+
+Matches: 8/8
+
+=== Comparing Cluster Distribution ===
+Cluster | Naive Count | Optimized Count | Difference
+--------|-------------|-----------------|------------
+   0    |       46381 |           46381 | 0 (0.000%)
+   1    |      646928 |          646928 | 0 (0.000%)
+   2    |      111816 |          111816 | 0 (0.000%)
+   3    |      116149 |          116149 | 0 (0.000%)
+   4    |       51634 |           51634 | 0 (0.000%)
+   5    |       55350 |           55350 | 0 (0.000%)
+   6    |      419272 |          419269 | 3 (0.000%)
+   7    |      601750 |          601753 | 3 (0.000%)
+
+=== Comparing Inertia ===
+  Naive inertia:     49468460.00
+  Optimized inertia: 49468480.00
+  Difference:        20.00 (0.000%)
+
+[6/6] Final validation result:
+========================================
+✓ VALIDATION PASSED
+  Both implementations produce equivalent results!
+========================================
