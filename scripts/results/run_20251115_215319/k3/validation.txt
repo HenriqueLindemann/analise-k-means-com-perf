@@ -1,0 +1,40 @@
+========================================
+  K-means Validation
+========================================
+K=3, Max iterations=100
+Dataset: data/dataset.bin
+
+[1/6] Loading dataset for NAIVE version...
+  Loaded 2049280 points
+[2/6] Running NAIVE K-means...
+  Naive inertia: 134196256.00
+[3/6] Loading dataset for OPTIMIZED version...
+  Loaded 2049280 points
+[4/6] Running OPTIMIZED K-means...
+  Optimized inertia: 134196248.00
+[5/6] Comparing results...
+
+=== Comparing Centroids ===
+  Naive cluster 0 <-> Optimized cluster 0: distance = 0.000016 ✓
+  Naive cluster 1 <-> Optimized cluster 1: distance = 0.000000 ✓
+  Naive cluster 2 <-> Optimized cluster 2: distance = 0.000015 ✓
+
+Matches: 3/3
+
+=== Comparing Cluster Distribution ===
+Cluster | Naive Count | Optimized Count | Difference
+--------|-------------|-----------------|------------
+   0    |       50493 |           50493 | 0 (0.000%)
+   1    |      680659 |          680659 | 0 (0.000%)
+   2    |     1318128 |         1318128 | 0 (0.000%)
+
+=== Comparing Inertia ===
+  Naive inertia:     134196256.00
+  Optimized inertia: 134196248.00
+  Difference:        8.00 (0.000%)
+
+[6/6] Final validation result:
+========================================
+✓ VALIDATION PASSED
+  Both implementations produce equivalent results!
+========================================

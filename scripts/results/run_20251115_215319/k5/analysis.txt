@@ -1,0 +1,42 @@
+
+================================================================================
+  K-MEANS PERFORMANCE ANALYSIS (perf)
+================================================================================
+
+TIME
+--------------------------------------------------------------------------------
+  Naive:     1.385 ± 0.011 seconds
+  Optimized: 0.628 ± 0.007 seconds
+  Speedup:   2.20x ✓ FASTER
+
+DETAILED METRICS
+--------------------------------------------------------------------------------
+Metric                              Naive       Optimized      Ratio     Status
+--------------------------------------------------------------------------------
+Cycles                      6,041,283,394   2,692,688,436       0.45x   ✓ BETTER
+Instructions               20,203,400,481   7,881,283,202       0.39x   ✓ BETTER
+IPC                                  3.34            2.93       0.88x    ✗ WORSE
+
+Cache references              143,254,654     144,912,719       1.01x    ✗ WORSE
+Cache misses                   88,074,232      42,824,744       0.49x   ✓ BETTER
+Cache miss rate (%)                  0.00            0.00       0.00x   ✓ BETTER
+
+L1 dcache loads             6,513,546,634   4,211,029,403       0.65x   ✓ BETTER
+L1 dcache misses               22,107,937     106,750,516       4.83x    ✗ WORSE
+L1 miss rate (%)                     0.34            2.54       7.47x    ✗ WORSE
+
+LLC loads                       3,100,097       3,682,460       1.19x    ✗ WORSE
+LLC misses                      2,709,106       2,723,615       1.01x    ✗ WORSE
+LLC miss rate (%)                   87.39           73.96       0.85x   ✓ BETTER
+
+Branches                    1,225,709,677     167,074,501       0.14x   ✓ BETTER
+Branch misses                     775,737          45,124       0.06x   ✓ BETTER
+Branch miss rate (%)                 0.00            0.00       0.00x   ✓ BETTER
+
+================================================================================
+
+KEY INSIGHTS:
+--------------------------------------------------------------------------------
+✓ Cache misses reduced by 51.4% (SoA layout working!)
+✗ L1 misses increased by 382.9% (SoA spread across more cache lines)
+✓ Overall speedup: 2.20x faster
