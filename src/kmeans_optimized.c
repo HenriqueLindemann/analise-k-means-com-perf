@@ -72,6 +72,106 @@ void initialize_centroids_soa(float centroids[][NUM_FEATURES],
     free(selected);
 }
 
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=2
+static inline int find_nearest_cluster_k2(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=2
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    // Encontrar mínimo - versão branchless
+    int update = dist1 < dist0;
+    return update ? 1 : 0;
+}
+
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=3
+static inline int find_nearest_cluster_k3(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=3
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    float dist2 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6]);
+
+    // Encontrar mínimo - versão branchless
+    int nearest = 0;
+    float min_dist = dist0;
+
+    int update = dist1 < min_dist;
+    nearest = update ? 1 : nearest;
+    min_dist = update ? dist1 : min_dist;
+
+    update = dist2 < min_dist;
+    nearest = update ? 2 : nearest;
+
+    return nearest;
+}
+
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=4
+static inline int find_nearest_cluster_k4(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=4
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    float dist2 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6]);
+
+    float dist3 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6]);
+
+    // Encontrar mínimo - versão branchless
+    int nearest = 0;
+    float min_dist = dist0;
+
+    int update = dist1 < min_dist;
+    nearest = update ? 1 : nearest;
+    min_dist = update ? dist1 : min_dist;
+
+    update = dist2 < min_dist;
+    nearest = update ? 2 : nearest;
+    min_dist = update ? dist2 : min_dist;
+
+    update = dist3 < min_dist;
+    nearest = update ? 3 : nearest;
+
+    return nearest;
+}
+
 // Encontra cluster mais próximo - OTIMIZADO com unroll para k=5
 static inline int find_nearest_cluster_k5(
     const float * restrict f0, const float * restrict f1,
@@ -120,6 +220,381 @@ static inline int find_nearest_cluster_k5(
 
     update = dist4 < min_dist;
     nearest = update ? 4 : nearest;
+
+    return nearest;
+}
+
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=6
+static inline int find_nearest_cluster_k6(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=6
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    float dist2 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6]);
+
+    float dist3 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6]);
+
+    float dist4 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6]);
+
+    float dist5 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6]);
+
+    // Encontrar mínimo - versão branchless
+    int nearest = 0;
+    float min_dist = dist0;
+
+    int update = dist1 < min_dist;
+    nearest = update ? 1 : nearest;
+    min_dist = update ? dist1 : min_dist;
+
+    update = dist2 < min_dist;
+    nearest = update ? 2 : nearest;
+    min_dist = update ? dist2 : min_dist;
+
+    update = dist3 < min_dist;
+    nearest = update ? 3 : nearest;
+    min_dist = update ? dist3 : min_dist;
+
+    update = dist4 < min_dist;
+    nearest = update ? 4 : nearest;
+    min_dist = update ? dist4 : min_dist;
+
+    update = dist5 < min_dist;
+    nearest = update ? 5 : nearest;
+
+    return nearest;
+}
+
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=7
+static inline int find_nearest_cluster_k7(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=7
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    float dist2 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6]);
+
+    float dist3 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6]);
+
+    float dist4 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6]);
+
+    float dist5 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6]);
+
+    float dist6 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6]);
+
+    // Encontrar mínimo - versão branchless
+    int nearest = 0;
+    float min_dist = dist0;
+
+    int update = dist1 < min_dist;
+    nearest = update ? 1 : nearest;
+    min_dist = update ? dist1 : min_dist;
+
+    update = dist2 < min_dist;
+    nearest = update ? 2 : nearest;
+    min_dist = update ? dist2 : min_dist;
+
+    update = dist3 < min_dist;
+    nearest = update ? 3 : nearest;
+    min_dist = update ? dist3 : min_dist;
+
+    update = dist4 < min_dist;
+    nearest = update ? 4 : nearest;
+    min_dist = update ? dist4 : min_dist;
+
+    update = dist5 < min_dist;
+    nearest = update ? 5 : nearest;
+    min_dist = update ? dist5 : min_dist;
+
+    update = dist6 < min_dist;
+    nearest = update ? 6 : nearest;
+
+    return nearest;
+}
+
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=8
+static inline int find_nearest_cluster_k8(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=8
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    float dist2 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6]);
+
+    float dist3 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6]);
+
+    float dist4 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6]);
+
+    float dist5 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6]);
+
+    float dist6 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6]);
+
+    float dist7 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[7][0], centroids[7][1], centroids[7][2], centroids[7][3],
+        centroids[7][4], centroids[7][5], centroids[7][6]);
+
+    // Encontrar mínimo - versão branchless
+    int nearest = 0;
+    float min_dist = dist0;
+
+    int update = dist1 < min_dist;
+    nearest = update ? 1 : nearest;
+    min_dist = update ? dist1 : min_dist;
+
+    update = dist2 < min_dist;
+    nearest = update ? 2 : nearest;
+    min_dist = update ? dist2 : min_dist;
+
+    update = dist3 < min_dist;
+    nearest = update ? 3 : nearest;
+    min_dist = update ? dist3 : min_dist;
+
+    update = dist4 < min_dist;
+    nearest = update ? 4 : nearest;
+    min_dist = update ? dist4 : min_dist;
+
+    update = dist5 < min_dist;
+    nearest = update ? 5 : nearest;
+    min_dist = update ? dist5 : min_dist;
+
+    update = dist6 < min_dist;
+    nearest = update ? 6 : nearest;
+    min_dist = update ? dist6 : min_dist;
+
+    update = dist7 < min_dist;
+    nearest = update ? 7 : nearest;
+
+    return nearest;
+}
+
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=9
+static inline int find_nearest_cluster_k9(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=9
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    float dist2 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6]);
+
+    float dist3 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6]);
+
+    float dist4 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6]);
+
+    float dist5 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6]);
+
+    float dist6 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6]);
+
+    float dist7 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[7][0], centroids[7][1], centroids[7][2], centroids[7][3],
+        centroids[7][4], centroids[7][5], centroids[7][6]);
+
+    float dist8 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[8][0], centroids[8][1], centroids[8][2], centroids[8][3],
+        centroids[8][4], centroids[8][5], centroids[8][6]);
+
+    // Encontrar mínimo - versão branchless
+    int nearest = 0;
+    float min_dist = dist0;
+
+    int update = dist1 < min_dist;
+    nearest = update ? 1 : nearest;
+    min_dist = update ? dist1 : min_dist;
+
+    update = dist2 < min_dist;
+    nearest = update ? 2 : nearest;
+    min_dist = update ? dist2 : min_dist;
+
+    update = dist3 < min_dist;
+    nearest = update ? 3 : nearest;
+    min_dist = update ? dist3 : min_dist;
+
+    update = dist4 < min_dist;
+    nearest = update ? 4 : nearest;
+    min_dist = update ? dist4 : min_dist;
+
+    update = dist5 < min_dist;
+    nearest = update ? 5 : nearest;
+    min_dist = update ? dist5 : min_dist;
+
+    update = dist6 < min_dist;
+    nearest = update ? 6 : nearest;
+    min_dist = update ? dist6 : min_dist;
+
+    update = dist7 < min_dist;
+    nearest = update ? 7 : nearest;
+    min_dist = update ? dist7 : min_dist;
+
+    update = dist8 < min_dist;
+    nearest = update ? 8 : nearest;
+
+    return nearest;
+}
+
+// Encontra cluster mais próximo - OTIMIZADO com unroll para k=10
+static inline int find_nearest_cluster_k10(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t idx,
+    const float centroids[][NUM_FEATURES]) {
+
+    // Unroll manual para k=10
+    float dist0 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6]);
+
+    float dist1 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6]);
+
+    float dist2 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6]);
+
+    float dist3 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6]);
+
+    float dist4 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6]);
+
+    float dist5 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6]);
+
+    float dist6 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6]);
+
+    float dist7 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[7][0], centroids[7][1], centroids[7][2], centroids[7][3],
+        centroids[7][4], centroids[7][5], centroids[7][6]);
+
+    float dist8 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[8][0], centroids[8][1], centroids[8][2], centroids[8][3],
+        centroids[8][4], centroids[8][5], centroids[8][6]);
+
+    float dist9 = euclidean_distance_soa_fast(f0, f1, f2, f3, f4, f5, f6, idx,
+        centroids[9][0], centroids[9][1], centroids[9][2], centroids[9][3],
+        centroids[9][4], centroids[9][5], centroids[9][6]);
+
+    // Encontrar mínimo - versão branchless
+    int nearest = 0;
+    float min_dist = dist0;
+
+    int update = dist1 < min_dist;
+    nearest = update ? 1 : nearest;
+    min_dist = update ? dist1 : min_dist;
+
+    update = dist2 < min_dist;
+    nearest = update ? 2 : nearest;
+    min_dist = update ? dist2 : min_dist;
+
+    update = dist3 < min_dist;
+    nearest = update ? 3 : nearest;
+    min_dist = update ? dist3 : min_dist;
+
+    update = dist4 < min_dist;
+    nearest = update ? 4 : nearest;
+    min_dist = update ? dist4 : min_dist;
+
+    update = dist5 < min_dist;
+    nearest = update ? 5 : nearest;
+    min_dist = update ? dist5 : min_dist;
+
+    update = dist6 < min_dist;
+    nearest = update ? 6 : nearest;
+    min_dist = update ? dist6 : min_dist;
+
+    update = dist7 < min_dist;
+    nearest = update ? 7 : nearest;
+    min_dist = update ? dist7 : min_dist;
+
+    update = dist8 < min_dist;
+    nearest = update ? 8 : nearest;
+    min_dist = update ? dist8 : min_dist;
+
+    update = dist9 < min_dist;
+    nearest = update ? 9 : nearest;
 
     return nearest;
 }
@@ -214,7 +689,7 @@ static void update_centroids_soa(float centroids[][NUM_FEATURES],
     free(buffer);
 }
 
-// K-means OTIMIZADO - versão especializada para k=5
+// K-means OTIMIZADO - versões especializadas com unroll para k=2,3,4,5,6,7,8,9,10
 void kmeans_optimized(DataSetSoA * restrict dataset,
                       float centroids[][NUM_FEATURES],
                       int k, int max_iterations) {
@@ -238,12 +713,84 @@ void kmeans_optimized(DataSetSoA * restrict dataset,
     for (int iter = 0; iter < max_iterations; iter++) {
         int changes = 0;
 
-        // Usar versão especializada para k=5, genérica para outros
-        if (k == 5) {
+        // Usa versão especializada para k=2,3,4,5,6,7,8,9,10; genérica para outros
+        if (k == 2) {
+            // Loop principal otimizado para k=2 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k2(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 3) {
+            // Loop principal otimizado para k=3 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k3(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 4) {
+            // Loop principal otimizado para k=4 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k4(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 5) {
             // Loop principal otimizado para k=5 com unrolling
             for (size_t i = 0; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k5(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 6) {
+            // Loop principal otimizado para k=6 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k6(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 7) {
+            // Loop principal otimizado para k=7 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k7(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 8) {
+            // Loop principal otimizado para k=8 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k8(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 9) {
+            // Loop principal otimizado para k=9 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k9(f0, f1, f2, f3, f4, f5, f6, i, centroids);
+
+                cluster_ids[i] = new_cluster;
+                changes += (old_cluster != new_cluster);
+            }
+        } else if (k == 10) {
+            // Loop principal otimizado para k=10 com unrolling
+            for (size_t i = 0; i < n; i++) {
+                const int old_cluster = cluster_ids[i];
+                const int new_cluster = find_nearest_cluster_k10(f0, f1, f2, f3, f4, f5, f6, i, centroids);
 
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);

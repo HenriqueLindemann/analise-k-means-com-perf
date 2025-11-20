@@ -1,0 +1,87 @@
+=== K-means Perf Analysis ===
+Date: qui 20 nov 2025 14:33:02 -03
+K=2, Max iterations=100, Runs=20
+P-cores: 0-7
+
+
+========================================
+  naive VERSION
+========================================
+
+71.569
+71.212
+79.552
+68.473
+66.009
+65.053
+76.515
+72.667
+69.438
+74.900
+70.889
+71.059
+70.600
+82.690
+76.914
+66.897
+73.139
+67.583
+83.786
+67.122
+
+ Performance counter stats for 'bin/kmeans_benchmark naive 2 100 data/dataset.bin' (20 runs):
+
+         475520423      cpu_core/cycles/                                                        ( +-  0.83% )  (79.98%)
+        1381201772      cpu_core/instructions/                                                  ( +-  0.10% )  (89.99%)
+          13740231      cpu_core/cache-references/                                              ( +-  0.10% )  (89.96%)
+          10691554      cpu_core/cache-misses/                                                  ( +-  0.80% )  (89.99%)
+         405062897      cpu_core/L1-dcache-loads/                                               ( +-  0.10% )  (89.96%)
+           1788765      cpu_core/L1-dcache-load-misses/  #    0.44% of all L1-dcache accesses   ( +- 28.26% )  (90.01%)
+            895811      cpu_core/LLC-loads/                                                     ( +-  9.47% )  (89.98%)
+            848572      cpu_core/LLC-load-misses/        #   94.73% of all LL-cache accesses    ( +-  9.98% )  (89.99%)
+         162569522      cpu_core/branches/                                                      ( +-  0.06% )  (89.95%)
+             68121      cpu_core/branch-misses/                                                 ( +-  0.70% )  (90.18%)
+
+           0.11744 +- 0.00148 seconds time elapsed  ( +-  1.26% )
+
+
+========================================
+  optimized VERSION
+========================================
+
+42.136
+45.980
+46.868
+48.044
+45.608
+50.350
+52.214
+50.970
+52.412
+53.435
+48.462
+48.882
+51.285
+54.552
+47.439
+42.363
+43.588
+43.217
+45.076
+48.190
+
+ Performance counter stats for 'bin/kmeans_benchmark optimized 2 100 data/dataset.bin' (20 runs):
+
+         373594959      cpu_core/cycles/                                                        ( +-  1.16% )  (79.36%)
+         927829453      cpu_core/instructions/                                                  ( +-  0.25% )  (89.66%)
+          13840608      cpu_core/cache-references/                                              ( +-  0.79% )  (89.68%)
+           6214570      cpu_core/cache-misses/                                                  ( +-  1.07% )  (89.70%)
+         399197562      cpu_core/L1-dcache-loads/                                               ( +-  0.45% )  (89.67%)
+           8069843      cpu_core/L1-dcache-load-misses/  #    2.02% of all L1-dcache accesses   ( +-  9.45% )  (89.69%)
+           1140055      cpu_core/LLC-loads/                                                     ( +-  5.07% )  (90.27%)
+            975791      cpu_core/LLC-load-misses/        #   85.59% of all LL-cache accesses    ( +-  4.42% )  (90.69%)
+          84502564      cpu_core/branches/                                                      ( +-  0.24% )  (90.71%)
+             62951      cpu_core/branch-misses/                                                 ( +-  1.49% )  (90.24%)
+
+           0.09377 +- 0.00143 seconds time elapsed  ( +-  1.53% )
+
