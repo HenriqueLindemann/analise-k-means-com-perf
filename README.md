@@ -1,10 +1,10 @@
-# K-means: Naive vs Cache-Optimized
+# K-means: Naive vs Optimized (SoA) vs Optimized + Loop Unrolling
 
-Implementação de K-means em C comparando duas abordagens de organização de memória para medir impacto no desempenho.
+Implementação de K-means em C comparando **três versões** para isolar e medir o impacto de diferentes otimizações no desempenho.
 
 ## Implementações
 
-### Naive (Array of Structs - AoS)
+### 1. Naive (Array of Structs - AoS)
 
 Implementação direta onde cada ponto é representado como uma estrutura contígua:
 
@@ -22,15 +22,18 @@ DataPoint points[N];  // [p0: f0,f1,...,f6][p1: f0,f1,...,f6]...
 - Boa localidade espacial ao acessar todas features de um ponto
 - Má localidade ao processar uma feature específica de múltiplos pontos
 
-### Optimized (Struct of Arrays - SoA)
+### 2. Optimized No-Unroll (Struct of Arrays - SoA)
 
-Organização onde cada feature é armazenada em um array separado:
+Organização onde cada feature é armazenada em um array separado, **sem loop unrolling manual**:
 
 ```c
 typedef struct {
-    float *feature_arrays[NUM_FEATURES];  // 7 arrays separados
+    float *global_active_power;
+    float *global_reactive_power;
+    float *voltage;
+    // ... 7 arrays separados (um por feature)
     int *cluster_ids;
-    size_t size;
+    size_t num_points;
 } DataSetSoA;
 
 // Layout: [all_f0][all_f1]...[all_f6][cluster_ids]
@@ -44,17 +47,38 @@ typedef struct {
 
 **Otimizações implementadas:**
 
-1. **Single-pass centroid updates**: Acumula todas features em uma única passada sobre cluster_ids (reduz de 7 passadas para 1)
+1. **Single-pass centroid updates**: Acumula todas features em uma única passada
+2. **Branchless distance calculation**: Calcula distâncias sem branches
+3. **Restrict pointers**: Permite ao compilador assumir não-aliasing
+4. **Aggressive compilation**: -O3 -march=native -ffast-math -flto -funroll-loops
 
-2. **Branchless distance calculation**: Calcula distâncias sem branches para reduzir mispredictions
+### 3. Optimized With-Unroll (SoA + Manual Loop Unrolling)
 
-3. **Manual loop unrolling**: Loop desenrolado manualmente para K=5
+Versão SoA com **loop unrolling manual especializado** para K=2 até K=10:
 
+**Otimizações implementadas:**
+
+1. **Single-pass centroid updates**: Acumula todas features em uma única passada
+2. **Branchless distance calculation**: Calcula distâncias sem branches
+3. **Manual loop unrolling**: Loop desenrolado manualmente para K=2 até K=10
 4. **Restrict pointers**: Permite ao compilador assumir não-aliasing
+5. **Aggressive compilation**: -O3 -march=native -ffast-math -flto -funroll-loops
 
-5. **Prefetching**: __builtin_prefetch para carregar dados antecipadamente
+**Exemplo de unrolling para K=5:**
+```c
+// Em vez de loop genérico:
+for (int c = 0; c < k; c++) { /* calcular distância */ }
 
-6. **Aggressive compilation**: -O3 -march=native -ffast-math -flto -funroll-loops
+// Código desenrolado fixo para K=5:
+dist0 = euclidean_distance_soa_fast(..., centroids[0]);
+dist1 = euclidean_distance_soa_fast(..., centroids[1]);
+dist2 = euclidean_distance_soa_fast(..., centroids[2]);
+dist3 = euclidean_distance_soa_fast(..., centroids[3]);
+dist4 = euclidean_distance_soa_fast(..., centroids[4]);
+nearest = find_min_of_5(dist0, dist1, dist2, dist3, dist4);
+```
+
+Isso permite ao compilador eliminar branches, melhorar pipeline de instruções e aumentar IPC.
 
 ## Quick Start
 
@@ -99,8 +123,8 @@ O script `run_full_analysis.sh` executa o workflow completo em 5 etapas:
 
 ### Etapa 1: Compilação
 Verifica e compila os binários necessários:
-- `bin/kmeans_benchmark` - Executa ambas as versões
-- `bin/validate_results` - Valida equivalência
+- `bin/kmeans_benchmark` - Executa as **3 versões** (naive, optimized_no_unroll, optimized)
+- `bin/validate_results` - Valida equivalência entre as **3 versões**
 - `bin/preprocessor` - Converte dataset para binário
 - `bin/cluster_save` - Salva clusters para visualização
 
@@ -109,16 +133,21 @@ Converte o CSV original (~2M amostras) para formato binário eficiente:
 - Input: `household_power_consumption.txt`
 - Output: `data/dataset.bin`
 
-### Etapa 3: Validação de Corretude
-Executa naive e optimized com mesma seed e compara:
+### Etapa 3: Validação de Corretude (3-way)
+Executa **as 3 versões** com mesma seed e compara todas entre si:
+- **Naive vs No-Unroll**: Verifica se SoA produz mesmos resultados
+- **Naive vs With-Unroll**: Verifica se unrolling preserva corretude
+- **No-Unroll vs With-Unroll**: Isola impacto do unrolling
+
+**Comparações:**
 - Centroids finais (threshold < 0.001)
 - Distribuição de clusters (pontos por cluster)
 - Inércia total (qualidade do clustering)
 
-**Pipeline para se a validação falhar.**
+**Pipeline para se qualquer validação falhar.**
 
 ### Etapa 4: Benchmarks com perf
-Executa ambas as versões com `perf stat` para coletar métricas hardware:
+Executa **as 3 versões** com `perf stat` para coletar métricas hardware:
 - Cycles, instructions, IPC
 - Cache references/misses
 - L1 dcache loads/misses
@@ -129,13 +158,14 @@ Usa taskset para fixar em P-cores (0-7) e realiza múltiplas execuções para es
 
 ### Etapa 5: Análise e Visualizações
 Gera automaticamente:
-- Análise em texto (analysis.txt)
+- Análise em texto (analysis.txt) com **3 colunas**
 - Relatório markdown (analysis.md)
-- 5 gráficos de performance
+- **6 gráficos de performance** (3 barras cada: Naive, No-Unroll, With-Unroll)
+- Gráfico de "Unroll Effect" (isolando ganho do unrolling)
 - 3 gráficos de clustering
 - Organiza tudo em estrutura de pastas
 
-Se múltiplos K forem especificados, gera também análise comparativa com 7 gráficos mostrando métricas em função de K.
+Se múltiplos K forem especificados, gera também análise comparativa com **13+ gráficos** mostrando métricas em função de K (3 linhas cada: Naive, No-Unroll, With-Unroll).
 
 ## Estrutura de Resultados
 
@@ -145,19 +175,20 @@ Se múltiplos K forem especificados, gera também análise comparativa com 7 gr�
 scripts/results/
 ├── run_TIMESTAMP/
 │   └── k5/                         # Resultados para K=5
-│       ├── validation.txt          # Validação de corretude
-│       ├── perf_raw.txt            # Raw output do perf stat
-│       ├── analysis.txt            # Análise em texto
+│       ├── validation.txt          # Validação de corretude (3-way)
+│       ├── perf_raw.txt            # Raw output do perf stat (3 versões)
+│       ├── analysis.txt            # Análise em texto (3 colunas)
 │       ├── analysis.md             # Relatório markdown
 │       ├── clusters_naive.csv
 │       ├── clusters_optimized.csv
 │       └── graphs/
-│           ├── performance/        # 5 gráficos de performance
-│           │   ├── execution_time.png
-│           │   ├── cache_misses.png
-│           │   ├── ipc.png
-│           │   ├── metrics_comparison.png
-│           │   └── improvements.png
+│           ├── performance/        # 6 gráficos de performance (3 barras cada)
+│           │   ├── execution_time.png       # Naive, No-Unroll, With-Unroll
+│           │   ├── cache_misses.png         # Comparação cache
+│           │   ├── ipc.png                  # Comparação IPC
+│           │   ├── metrics_comparison.png   # Multi-métrica (log scale)
+│           │   ├── improvements.png         # Melhorias relativas
+│           │   └── unroll_effect.png        # Ganho específico do unrolling
 │           └── clusters/           # 3 gráficos de clustering
 │               ├── clusters_comparison.png
 │               ├── cluster_distribution.png
@@ -177,15 +208,22 @@ scripts/results/
 │   ├── k6/                         # Resultados individuais K=6
 │   ├── k7/                         # Resultados individuais K=7
 │   └── k_comparison/               # Análise comparativa entre K
-│       ├── k_analysis.txt          # Comparação detalhada
-│       └── graphs/                 # 7 gráficos comparativos
-│           ├── time_vs_k.png       # Tempo vs K
+│       ├── k_analysis.txt          # Comparação detalhada (3 versões)
+│       └── graphs/                 # 13+ gráficos comparativos (3 linhas cada)
+│           ├── time_vs_k.png       # Tempo vs K (3 linhas + barras de erro)
 │           ├── cycles_vs_k.png     # Ciclos vs K
+│           ├── instructions_vs_k.png        # Instruções vs K
 │           ├── cache_misses_vs_k.png
+│           ├── cache_hit_rate_vs_k.png
+│           ├── cache_miss_rate_vs_k.png     # L2/L3
+│           ├── l1_cache_miss_rate_vs_k.png
+│           ├── llc_miss_rate_vs_k.png       # L3
+│           ├── all_cache_levels_vs_k.png    # 3 subplots cache
 │           ├── ipc_vs_k.png
 │           ├── branches_vs_k.png
-│           ├── speedup_vs_k.png    # Speedup vs K
-│           └── all_metrics_vs_k.png # Todas métricas (6 subplots)
+│           ├── speedup_vs_k.png    # 2 linhas: N→WU e NU→WU (unroll effect)
+│           ├── instructions_count_vs_k.png
+│           └── all_metrics_vs_k.png # Todas métricas (6 subplots, 3 linhas cada)
 └── latest -> run_TIMESTAMP
 ```
 
@@ -193,21 +231,27 @@ scripts/results/
 
 ```
 .
-├── bin/                        # Binários compilados
-├── src/                        # Implementações C
-│   ├── kmeans_naive.c         # Versão AoS
-│   ├── kmeans_optimized.c     # Versão SoA (com unrolling para K=5)
-│   ├── data_loader.c          # Carregamento de datasets
-│   ├── validate_results.c     # Validação de corretude
+├── bin/                             # Binários compilados
+├── src/                             # Implementações C
+│   ├── kmeans_naive.c              # Versão 1: AoS
+│   ├── kmeans_optimized_no_unroll.c # Versão 2: SoA sem unrolling manual
+│   ├── kmeans_optimized.c          # Versão 3: SoA com unrolling (K=2-10)
+│   ├── benchmark.c                 # Benchmark runner (3 modos)
+│   ├── data_loader.c               # Carregamento de datasets (AoS e SoA)
+│   ├── validate_results.c          # Validação 3-way
 │   └── ...
-├── include/                    # Headers
-├── scripts/                    # Automação e análise
-│   ├── run_full_analysis.sh   # Pipeline completo
-│   ├── analyze_perf.py        # Análise de métricas (parsing de perf)
-│   ├── analyze_k_comparison.py # Análise comparativa de K
-│   └── ...
-├── data/                       # Datasets binários
-└── Makefile
+├── include/                         # Headers
+│   └── kmeans.h                    # Declarações das 3 versões
+├── scripts/                         # Automação e análise
+│   ├── run_full_analysis.sh        # Pipeline completo (3 versões)
+│   ├── analyze_perf.py             # Parsing perf (3 versões)
+│   ├── analyze_k_values.py         # Análise vs K (3 linhas)
+│   ├── analyze_k_comparison.py     # Comparação K (13+ gráficos)
+│   ├── perf_benchmark.sh           # Benchmark perf (3 versões)
+│   ├── validate.sh                 # Validação wrapper
+│   └── benchmark_csv.sh            # Benchmark CSV (3 versões)
+├── data/                            # Datasets binários
+└── Makefile                         # Compila as 3 versões
 ```
 
 ## Exemplos de Uso
@@ -265,7 +309,7 @@ Se preferir executar cada etapa separadamente:
 
 ```bash
 # Compilação
-make release              # Versão otimizada
+make release              # Versão otimizada (3 versões)
 make debug                # Versão com prints de debug
 make clean                # Limpar binários
 
@@ -273,14 +317,23 @@ make clean                # Limpar binários
 bin/preprocessor 0        # Dataset completo (~2M amostras)
 bin/preprocessor 100000   # Subset (100k amostras)
 
-# Validação manual
+# Validação manual (3-way)
 ./scripts/validate.sh 5 100 data/dataset.bin
 
-# Benchmark manual
+# Benchmark manual das 3 versões
+bin/kmeans_benchmark naive 5 100 data/dataset.bin
+bin/kmeans_benchmark optimized_no_unroll 5 100 data/dataset.bin
+bin/kmeans_benchmark optimized 5 100 data/dataset.bin
+
+# Benchmark com perf (3 versões)
 ./scripts/perf_benchmark.sh 5 100 15
+
+# Benchmark CSV (3 versões)
+./scripts/benchmark_csv.sh 5 100 20
 
 # Visualização de clusters
 bin/cluster_save naive 5 data/dataset.bin clusters
+bin/cluster_save optimized_no_unroll 5 data/dataset.bin clusters
 bin/cluster_save optimized 5 data/dataset.bin clusters
 python3 scripts/plot_clusters.py clusters_*.csv
 ```
@@ -320,10 +373,33 @@ pip install matplotlib numpy scikit-learn
 
 ## Metodologia de Validação
 
-Para garantir que as otimizações preservam a corretude do algoritmo, o pipeline executa validação automática comparando:
+Para garantir que as otimizações preservam a corretude do algoritmo, o pipeline executa validação automática **3-way** comparando todas as implementações entre si:
 
-1. **Centroids finais**: Distância euclidiana < 0.001
-2. **Distribuição de clusters**: Contagem de pontos por cluster
-3. **Inércia total**: Soma das distâncias quadradas (métrica de qualidade)
+### Comparações realizadas:
 
-Ambas as versões executam com mesma seed para garantir inicialização idêntica.
+1. **Naive vs No-Unroll**: Verifica se a mudança de AoS para SoA preserva corretude
+2. **Naive vs With-Unroll**: Verifica corretude da versão totalmente otimizada
+3. **No-Unroll vs With-Unroll**: Isola e valida o impacto do loop unrolling
+
+### Métricas comparadas:
+
+1. **Centroids finais**: Distância euclidiana entre centroids correspondentes < 0.001
+2. **Distribuição de clusters**: Contagem de pontos atribuídos a cada cluster
+3. **Inércia total**: Soma das distâncias quadradas (métrica de qualidade do clustering)
+
+**Todas as 3 versões** executam com mesma seed (42) para garantir inicialização idêntica dos centroids.
+
+### Exemplo de saída da validação:
+
+```
+[9/9] Final validation result:
+========================================
+✓ VALIDATION PASSED
+  All 3 implementations produce equivalent results!
+  - Naive vs No-Unroll: ✓
+  - Naive vs With-Unroll: ✓
+  - No-Unroll vs With-Unroll: ✓
+========================================
+```
+
+O pipeline **para** se qualquer uma das validações falhar, garantindo que apenas resultados corretos sejam analisados.

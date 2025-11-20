@@ -16,18 +16,21 @@ BIN_DIR = bin
 # Arquivos fonte
 SRCS = $(SRC_DIR)/kmeans_naive.c \
        $(SRC_DIR)/kmeans_optimized.c \
+       $(SRC_DIR)/kmeans_optimized_no_unroll.c \
        $(SRC_DIR)/data_loader.c \
        $(SRC_DIR)/utils.c
 
 # Objetos (release)
 OBJS_RELEASE = $(BUILD_DIR)/kmeans_naive.o \
                $(BUILD_DIR)/kmeans_optimized.o \
+               $(BUILD_DIR)/kmeans_optimized_no_unroll.o \
                $(BUILD_DIR)/data_loader.o \
                $(BUILD_DIR)/utils.o
 
 # Objetos (debug)
 OBJS_DEBUG = $(BUILD_DIR)/kmeans_naive_debug.o \
              $(BUILD_DIR)/kmeans_optimized_debug.o \
+             $(BUILD_DIR)/kmeans_optimized_no_unroll_debug.o \
              $(BUILD_DIR)/data_loader_debug.o \
              $(BUILD_DIR)/utils_debug.o
 

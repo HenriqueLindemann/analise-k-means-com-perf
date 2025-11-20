@@ -68,8 +68,26 @@ for K in $K_VALUES; do
 
     } > "$PERF_FILE"
 
-    # Rodar optimized
-    echo "    Running optimized..."
+    # Rodar optimized no-unroll
+    echo "    Running optimized no-unroll..."
+    {
+        echo ""
+        echo "========================================"
+        echo "  optimized_no_unroll VERSION (K=$K)"
+        echo "========================================"
+        echo ""
+
+        for run in $(seq 1 $RUNS); do
+            taskset -c 0-7 bin/kmeans_benchmark optimized_no_unroll $K $ITER data/dataset.bin
+        done
+
+        echo ""
+        taskset -c 0-7 perf stat -r $RUNS -e cpu_core/cycles/,cpu_core/instructions/,cpu_core/cache-references/,cpu_core/cache-misses/,cpu_core/L1-dcache-loads/,cpu_core/L1-dcache-load-misses/,cpu_core/LLC-loads/,cpu_core/LLC-load-misses/,cpu_core/branches/,cpu_core/branch-misses/ bin/kmeans_benchmark optimized_no_unroll $K $ITER data/dataset.bin 2>&1
+
+    } >> "$PERF_FILE"
+
+    # Rodar optimized with-unroll
+    echo "    Running optimized with-unroll..."
     {
         echo ""
         echo "========================================"

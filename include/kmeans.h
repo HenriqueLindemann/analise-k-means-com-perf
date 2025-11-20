@@ -35,7 +35,12 @@ typedef struct {
 void kmeans_naive(DataPoint *points, size_t num_points,
                   Centroid *centroids, int k, int max_iterations);
 
-// K-means otimizado (SoA, cache-friendly)
+// K-means otimizado SEM unroll (SoA, cache-friendly)
+void kmeans_optimized_no_unroll(DataSetSoA *dataset,
+                                float centroids[][NUM_FEATURES],
+                                int k, int max_iterations);
+
+// K-means otimizado COM unroll (SoA, cache-friendly, unroll para k=2-10)
 void kmeans_optimized(DataSetSoA *dataset,
                       float centroids[][NUM_FEATURES],
                       int k, int max_iterations);

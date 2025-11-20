@@ -60,8 +60,9 @@ run_version() {
     echo ""
 }
 
-# Executar benchmarks
+# Executar benchmarks para as 3 versões
 run_version "naive"
+run_version "optimized_no_unroll"
 run_version "optimized"
 
 echo "========================================"
@@ -78,29 +79,41 @@ naive_avg=$(echo "$naive_times" | awk '{sum+=$1; count++} END {printf "%.3f", su
 naive_min=$(echo "$naive_times" | sort -n | head -1)
 naive_max=$(echo "$naive_times" | sort -n | tail -1)
 
-echo "Naive:"
+echo "Naive (AoS):"
 echo "  Min: $naive_min ms"
 echo "  Max: $naive_max ms"
 echo "  Avg: $naive_avg ms"
 echo ""
 
-# Optimized stats
+# Optimized no-unroll stats
+opt_no_unroll_times=$(grep "^optimized_no_unroll," "$CSV_FILE" | cut -d, -f6)
+opt_no_unroll_avg=$(echo "$opt_no_unroll_times" | awk '{sum+=$1; count++} END {printf "%.3f", sum/count}')
+opt_no_unroll_min=$(echo "$opt_no_unroll_times" | sort -n | head -1)
+opt_no_unroll_max=$(echo "$opt_no_unroll_times" | sort -n | tail -1)
+
+echo "Optimized (SoA, No-Unroll):"
+echo "  Min: $opt_no_unroll_min ms"
+echo "  Max: $opt_no_unroll_max ms"
+echo "  Avg: $opt_no_unroll_avg ms"
+echo ""
+
+# Optimized with-unroll stats
 opt_times=$(grep "^optimized," "$CSV_FILE" | cut -d, -f6)
 opt_avg=$(echo "$opt_times" | awk '{sum+=$1; count++} END {printf "%.3f", sum/count}')
 opt_min=$(echo "$opt_times" | sort -n | head -1)
 opt_max=$(echo "$opt_times" | sort -n | tail -1)
 
-echo "Optimized:"
+echo "Optimized (SoA, With-Unroll):"
 echo "  Min: $opt_min ms"
 echo "  Max: $opt_max ms"
 echo "  Avg: $opt_avg ms"
 echo ""
 
-# Speedup
-speedup=$(echo "scale=3; $naive_avg / $opt_avg" | bc)
-if (( $(echo "$speedup > 1" | bc -l) )); then
-    echo "Speedup: ${speedup}x (optimized is FASTER)"
-else
-    slowdown=$(echo "scale=3; $opt_avg / $naive_avg" | bc)
-    echo "Slowdown: ${slowdown}x (optimized is slower)"
-fi
+# Speedups
+echo "=== Speedups ==="
+speedup_naive_to_with_unroll=$(echo "scale=3; $naive_avg / $opt_avg" | bc)
+speedup_no_unroll_to_with_unroll=$(echo "scale=3; $opt_no_unroll_avg / $opt_avg" | bc)
+
+echo "Naive → With-Unroll:     ${speedup_naive_to_with_unroll}x"
+echo "No-Unroll → With-Unroll: ${speedup_no_unroll_to_with_unroll}x (unroll effect)"
+echo ""

@@ -7,7 +7,12 @@
       "Bash(tree:*)",
       "Bash(make release:*)",
       "Bash(./run_full_analysis.sh:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(make clean:*)",
+      "Bash(make:*)",
+      "Bash(timeout 15:*)",
+      "Bash(timeout 15 ./bin/kmeans_benchmark:*)",
+      "Bash(timeout 90 bash:*)"
     ],
     "deny": [],
     "ask": []

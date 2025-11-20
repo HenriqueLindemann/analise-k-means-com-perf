@@ -8,11 +8,14 @@
 
 void print_usage(const char *prog) {
     fprintf(stderr, "Usage: %s <mode> <k> <max_iter> <dataset.bin>\n", prog);
-    fprintf(stderr, "  mode:      'naive' ou 'optimized'\n");
+    fprintf(stderr, "  mode:      'naive', 'optimized_no_unroll', ou 'optimized'\n");
     fprintf(stderr, "  k:         número de clusters\n");
     fprintf(stderr, "  max_iter:  número máximo de iterações\n");
     fprintf(stderr, "  dataset:   arquivo binário de dados\n");
-    fprintf(stderr, "\nExemplo: %s optimized 5 100 data/dataset.bin\n", prog);
+    fprintf(stderr, "\nExemplos:\n");
+    fprintf(stderr, "  %s naive 5 100 data/dataset.bin\n", prog);
+    fprintf(stderr, "  %s optimized_no_unroll 5 100 data/dataset.bin\n", prog);
+    fprintf(stderr, "  %s optimized 5 100 data/dataset.bin\n", prog);
 }
 
 int main(int argc, char *argv[]) {
@@ -63,8 +66,36 @@ int main(int argc, char *argv[]) {
         free(centroids);
         free(points);
 
+    } else if (strcmp(mode, "optimized_no_unroll") == 0) {
+        // ===== VERSÃO OTIMIZADA SEM UNROLL =====
+        size_t num_points;
+        DataSetSoA *dataset = load_dataset_soa(dataset_file, &num_points);
+        if (!dataset) {
+            fprintf(stderr, "Error loading dataset\n");
+            return 1;
+        }
+
+        // Alocar centroids
+        float (*centroids)[NUM_FEATURES] = malloc(k * NUM_FEATURES * sizeof(float));
+        if (!centroids) {
+            fprintf(stderr, "Error allocating centroids\n");
+            free_dataset_soa(dataset);
+            return 1;
+        }
+
+        // Executar K-means otimizado SEM unroll
+        timer_start(&timer);
+        kmeans_optimized_no_unroll(dataset, centroids, k, max_iterations);
+        timer_stop(&timer);
+
+        // Output apenas o tempo
+        printf("%.3f\n", timer_elapsed_ms(&timer));
+
+        free(centroids);
+        free_dataset_soa(dataset);
+
     } else if (strcmp(mode, "optimized") == 0) {
-        // ===== VERSÃO OTIMIZADA =====
+        // ===== VERSÃO OTIMIZADA COM UNROLL =====
         size_t num_points;
         DataSetSoA *dataset = load_dataset_soa(dataset_file, &num_points);
         if (!dataset) {
@@ -92,7 +123,7 @@ int main(int argc, char *argv[]) {
         free_dataset_soa(dataset);
 
     } else {
-        fprintf(stderr, "Error: mode must be 'naive' or 'optimized'\n");
+        fprintf(stderr, "Error: mode must be 'naive', 'optimized_no_unroll', or 'optimized'\n");
         print_usage(argv[0]);
         return 1;
     }

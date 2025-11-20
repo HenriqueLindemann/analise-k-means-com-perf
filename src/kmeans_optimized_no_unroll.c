@@ -37,8 +37,8 @@ static inline float euclidean_distance_soa_fast(
 }
 
 // Inicializa centroids aleatoriamente
-void initialize_centroids_soa(float centroids[][NUM_FEATURES],
-                              const DataSetSoA *dataset, int k) {
+static void initialize_centroids_soa_no_unroll(float centroids[][NUM_FEATURES],
+                                               const DataSetSoA *dataset, int k) {
     int *selected = malloc(k * sizeof(int));
 
     for (int i = 0; i < k; i++) {
@@ -100,8 +100,8 @@ static inline int find_nearest_cluster_generic(
 }
 
 // Atualiza centroids - versão otimizada (1 ÚNICA passada!)
-static void update_centroids_soa(float centroids[][NUM_FEATURES],
-                                  const DataSetSoA * restrict dataset, int k) {
+static void update_centroids_soa_no_unroll(float centroids[][NUM_FEATURES],
+                                            const DataSetSoA * restrict dataset, int k) {
     // Alocar tudo de uma vez alinhado para melhor cache
     const size_t total_size = NUM_FEATURES * k * sizeof(float) + k * sizeof(int);
     void *buffer = calloc(1, total_size);
@@ -163,12 +163,12 @@ static void update_centroids_soa(float centroids[][NUM_FEATURES],
 }
 
 // K-means OTIMIZADO SEM UNROLL - usa sempre a versão genérica
-void kmeans_optimized(DataSetSoA * restrict dataset,
-                      float centroids[][NUM_FEATURES],
-                      int k, int max_iterations) {
+void kmeans_optimized_no_unroll(DataSetSoA * restrict dataset,
+                                float centroids[][NUM_FEATURES],
+                                int k, int max_iterations) {
 
     // Inicializar centroids
-    initialize_centroids_soa(centroids, dataset, k);
+    initialize_centroids_soa_no_unroll(centroids, dataset, k);
 
     const size_t n = dataset->num_points;
     int * restrict cluster_ids = dataset->cluster_ids;
@@ -204,6 +204,6 @@ void kmeans_optimized(DataSetSoA * restrict dataset,
         }
 
         // Atualizar centroids
-        update_centroids_soa(centroids, dataset, k);
+        update_centroids_soa_no_unroll(centroids, dataset, k);
     }
 }

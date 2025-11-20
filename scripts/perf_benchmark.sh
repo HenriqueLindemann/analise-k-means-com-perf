@@ -67,10 +67,13 @@ run_perf() {
 }
 
 # Executar benchmarks
-echo "[1/2] Running NAIVE version..."
+echo "[1/3] Running NAIVE version..."
 run_perf "naive"
 
-echo "[2/2] Running OPTIMIZED version..."
+echo "[2/3] Running OPTIMIZED NO-UNROLL version..."
+run_perf "optimized_no_unroll"
+
+echo "[3/3] Running OPTIMIZED WITH-UNROLL version..."
 run_perf "optimized"
 
 echo "========================================"
