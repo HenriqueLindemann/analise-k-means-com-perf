@@ -221,7 +221,7 @@ scripts/results/
 │           ├── all_cache_levels_vs_k.png    # 3 subplots cache
 │           ├── ipc_vs_k.png
 │           ├── branches_vs_k.png
-│           ├── speedup_vs_k.png    # 2 linhas: N→WU e NU→WU (unroll effect)
+            ├── speedup_vs_k.png    # 3 linhas: Naive, N→NU e N→WU (relativo ao Naive)
 │           ├── instructions_count_vs_k.png
 │           └── all_metrics_vs_k.png # Todas métricas (6 subplots, 3 linhas cada)
 └── latest -> run_TIMESTAMP
@@ -402,4 +402,4 @@ Para garantir que as otimizações preservam a corretude do algoritmo, o pipelin
 ========================================
 ```
 
-O pipeline **para** se qualquer uma das validações falhar, garantindo que apenas resultados corretos sejam analisados.
+O pipeline **para** se qualquer uma das validações falhar.
