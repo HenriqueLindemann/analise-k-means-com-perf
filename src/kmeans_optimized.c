@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <float.h>
+#include <immintrin.h>  // AVX/SIMD intrinsics
 
 #ifdef DEBUG
 #define DEBUG_PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -11,7 +12,7 @@
 #define DEBUG_PRINT(...) do {} while(0)
 #endif
 
-// Versão OTIMIZADA: Struct of Arrays (SoA), cache-friendly, prefetching
+// Versão OTIMIZADA: Struct of Arrays (SoA) + SIMD + Loop Unrolling
 
 // Calcula distância euclidiana ao quadrado - versão SoA otimizada e inline
 static inline float euclidean_distance_soa_fast(
@@ -34,6 +35,56 @@ static inline float euclidean_distance_soa_fast(
     // FMA optimization
     return diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3 +
            diff4 * diff4 + diff5 * diff5 + diff6 * diff6;
+}
+
+// SIMD: Calcula distâncias de 8 pontos para UM centroid simultaneamente
+static inline void compute_distances_8_simd(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float c0, const float c1, const float c2, const float c3,
+    const float c4, const float c5, const float c6,
+    float * restrict distances) {
+
+    // Broadcast centroid values para vetores
+    __m256 vc0 = _mm256_set1_ps(c0);
+    __m256 vc1 = _mm256_set1_ps(c1);
+    __m256 vc2 = _mm256_set1_ps(c2);
+    __m256 vc3 = _mm256_set1_ps(c3);
+    __m256 vc4 = _mm256_set1_ps(c4);
+    __m256 vc5 = _mm256_set1_ps(c5);
+    __m256 vc6 = _mm256_set1_ps(c6);
+
+    // Carregar 8 pontos de cada feature
+    __m256 vf0 = _mm256_loadu_ps(&f0[start_idx]);
+    __m256 vf1 = _mm256_loadu_ps(&f1[start_idx]);
+    __m256 vf2 = _mm256_loadu_ps(&f2[start_idx]);
+    __m256 vf3 = _mm256_loadu_ps(&f3[start_idx]);
+    __m256 vf4 = _mm256_loadu_ps(&f4[start_idx]);
+    __m256 vf5 = _mm256_loadu_ps(&f5[start_idx]);
+    __m256 vf6 = _mm256_loadu_ps(&f6[start_idx]);
+
+    // Calcular diferenças
+    __m256 d0 = _mm256_sub_ps(vf0, vc0);
+    __m256 d1 = _mm256_sub_ps(vf1, vc1);
+    __m256 d2 = _mm256_sub_ps(vf2, vc2);
+    __m256 d3 = _mm256_sub_ps(vf3, vc3);
+    __m256 d4 = _mm256_sub_ps(vf4, vc4);
+    __m256 d5 = _mm256_sub_ps(vf5, vc5);
+    __m256 d6 = _mm256_sub_ps(vf6, vc6);
+
+    // Calcular quadrados e acumular com FMA
+    __m256 sum = _mm256_mul_ps(d0, d0);
+    sum = _mm256_fmadd_ps(d1, d1, sum);
+    sum = _mm256_fmadd_ps(d2, d2, sum);
+    sum = _mm256_fmadd_ps(d3, d3, sum);
+    sum = _mm256_fmadd_ps(d4, d4, sum);
+    sum = _mm256_fmadd_ps(d5, d5, sum);
+    sum = _mm256_fmadd_ps(d6, d6, sum);
+
+    // Armazenar resultados
+    _mm256_storeu_ps(distances, sum);
 }
 
 // Inicializa centroids aleatoriamente
@@ -626,6 +677,613 @@ static inline int find_nearest_cluster_generic(
     return nearest;
 }
 
+// ============================================================================
+// VERSÕES SIMD: Processam 8 pontos simultaneamente para cada K
+// ============================================================================
+
+// SIMD K=5: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k5(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+    float dist3[8] __attribute__((aligned(32)));
+    float dist4[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6], dist3);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6], dist4);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+
+        int update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+        min_dist = update ? dist2[i] : min_dist;
+
+        update = dist3[i] < min_dist;
+        nearest = update ? 3 : nearest;
+        min_dist = update ? dist3[i] : min_dist;
+
+        update = dist4[i] < min_dist;
+        nearest = update ? 4 : nearest;
+
+        results[i] = nearest;
+    }
+}
+// SIMD K=2: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k2(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
+// SIMD K=3: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k3(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
+// SIMD K=4: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k4(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+    float dist3[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6], dist3);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+        min_dist = update ? dist2[i] : min_dist;
+        update = dist3[i] < min_dist;
+        nearest = update ? 3 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
+// SIMD K=6: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k6(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+    float dist3[8] __attribute__((aligned(32)));
+    float dist4[8] __attribute__((aligned(32)));
+    float dist5[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6], dist3);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6], dist4);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6], dist5);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+        min_dist = update ? dist2[i] : min_dist;
+        update = dist3[i] < min_dist;
+        nearest = update ? 3 : nearest;
+        min_dist = update ? dist3[i] : min_dist;
+        update = dist4[i] < min_dist;
+        nearest = update ? 4 : nearest;
+        min_dist = update ? dist4[i] : min_dist;
+        update = dist5[i] < min_dist;
+        nearest = update ? 5 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
+// SIMD K=7: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k7(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+    float dist3[8] __attribute__((aligned(32)));
+    float dist4[8] __attribute__((aligned(32)));
+    float dist5[8] __attribute__((aligned(32)));
+    float dist6[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6], dist3);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6], dist4);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6], dist5);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6], dist6);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+        min_dist = update ? dist2[i] : min_dist;
+        update = dist3[i] < min_dist;
+        nearest = update ? 3 : nearest;
+        min_dist = update ? dist3[i] : min_dist;
+        update = dist4[i] < min_dist;
+        nearest = update ? 4 : nearest;
+        min_dist = update ? dist4[i] : min_dist;
+        update = dist5[i] < min_dist;
+        nearest = update ? 5 : nearest;
+        min_dist = update ? dist5[i] : min_dist;
+        update = dist6[i] < min_dist;
+        nearest = update ? 6 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
+// SIMD K=8: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k8(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+    float dist3[8] __attribute__((aligned(32)));
+    float dist4[8] __attribute__((aligned(32)));
+    float dist5[8] __attribute__((aligned(32)));
+    float dist6[8] __attribute__((aligned(32)));
+    float dist7[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6], dist3);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6], dist4);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6], dist5);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6], dist6);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[7][0], centroids[7][1], centroids[7][2], centroids[7][3],
+        centroids[7][4], centroids[7][5], centroids[7][6], dist7);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+        min_dist = update ? dist2[i] : min_dist;
+        update = dist3[i] < min_dist;
+        nearest = update ? 3 : nearest;
+        min_dist = update ? dist3[i] : min_dist;
+        update = dist4[i] < min_dist;
+        nearest = update ? 4 : nearest;
+        min_dist = update ? dist4[i] : min_dist;
+        update = dist5[i] < min_dist;
+        nearest = update ? 5 : nearest;
+        min_dist = update ? dist5[i] : min_dist;
+        update = dist6[i] < min_dist;
+        nearest = update ? 6 : nearest;
+        min_dist = update ? dist6[i] : min_dist;
+        update = dist7[i] < min_dist;
+        nearest = update ? 7 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
+// SIMD K=9: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k9(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+    float dist3[8] __attribute__((aligned(32)));
+    float dist4[8] __attribute__((aligned(32)));
+    float dist5[8] __attribute__((aligned(32)));
+    float dist6[8] __attribute__((aligned(32)));
+    float dist7[8] __attribute__((aligned(32)));
+    float dist8[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6], dist3);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6], dist4);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6], dist5);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6], dist6);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[7][0], centroids[7][1], centroids[7][2], centroids[7][3],
+        centroids[7][4], centroids[7][5], centroids[7][6], dist7);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[8][0], centroids[8][1], centroids[8][2], centroids[8][3],
+        centroids[8][4], centroids[8][5], centroids[8][6], dist8);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+        min_dist = update ? dist2[i] : min_dist;
+        update = dist3[i] < min_dist;
+        nearest = update ? 3 : nearest;
+        min_dist = update ? dist3[i] : min_dist;
+        update = dist4[i] < min_dist;
+        nearest = update ? 4 : nearest;
+        min_dist = update ? dist4[i] : min_dist;
+        update = dist5[i] < min_dist;
+        nearest = update ? 5 : nearest;
+        min_dist = update ? dist5[i] : min_dist;
+        update = dist6[i] < min_dist;
+        nearest = update ? 6 : nearest;
+        min_dist = update ? dist6[i] : min_dist;
+        update = dist7[i] < min_dist;
+        nearest = update ? 7 : nearest;
+        min_dist = update ? dist7[i] : min_dist;
+        update = dist8[i] < min_dist;
+        nearest = update ? 8 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
+// SIMD K=10: Processa 8 pontos simultaneamente
+static inline void find_nearest_clusters_8_k10(
+    const float * restrict f0, const float * restrict f1,
+    const float * restrict f2, const float * restrict f3,
+    const float * restrict f4, const float * restrict f5,
+    const float * restrict f6, size_t start_idx,
+    const float centroids[][NUM_FEATURES],
+    int * restrict results) {
+
+    float dist0[8] __attribute__((aligned(32)));
+    float dist1[8] __attribute__((aligned(32)));
+    float dist2[8] __attribute__((aligned(32)));
+    float dist3[8] __attribute__((aligned(32)));
+    float dist4[8] __attribute__((aligned(32)));
+    float dist5[8] __attribute__((aligned(32)));
+    float dist6[8] __attribute__((aligned(32)));
+    float dist7[8] __attribute__((aligned(32)));
+    float dist8[8] __attribute__((aligned(32)));
+    float dist9[8] __attribute__((aligned(32)));
+
+    // Calcular distâncias para cada centroid (unroll completo)
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[0][0], centroids[0][1], centroids[0][2], centroids[0][3],
+        centroids[0][4], centroids[0][5], centroids[0][6], dist0);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[1][0], centroids[1][1], centroids[1][2], centroids[1][3],
+        centroids[1][4], centroids[1][5], centroids[1][6], dist1);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[2][0], centroids[2][1], centroids[2][2], centroids[2][3],
+        centroids[2][4], centroids[2][5], centroids[2][6], dist2);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[3][0], centroids[3][1], centroids[3][2], centroids[3][3],
+        centroids[3][4], centroids[3][5], centroids[3][6], dist3);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[4][0], centroids[4][1], centroids[4][2], centroids[4][3],
+        centroids[4][4], centroids[4][5], centroids[4][6], dist4);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[5][0], centroids[5][1], centroids[5][2], centroids[5][3],
+        centroids[5][4], centroids[5][5], centroids[5][6], dist5);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[6][0], centroids[6][1], centroids[6][2], centroids[6][3],
+        centroids[6][4], centroids[6][5], centroids[6][6], dist6);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[7][0], centroids[7][1], centroids[7][2], centroids[7][3],
+        centroids[7][4], centroids[7][5], centroids[7][6], dist7);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[8][0], centroids[8][1], centroids[8][2], centroids[8][3],
+        centroids[8][4], centroids[8][5], centroids[8][6], dist8);
+
+    compute_distances_8_simd(f0, f1, f2, f3, f4, f5, f6, start_idx,
+        centroids[9][0], centroids[9][1], centroids[9][2], centroids[9][3],
+        centroids[9][4], centroids[9][5], centroids[9][6], dist9);
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int i = 0; i < 8; i++) {
+        int nearest = 0;
+        float min_dist = dist0[i];
+        int update;
+
+        update = dist1[i] < min_dist;
+        nearest = update ? 1 : nearest;
+        min_dist = update ? dist1[i] : min_dist;
+        update = dist2[i] < min_dist;
+        nearest = update ? 2 : nearest;
+        min_dist = update ? dist2[i] : min_dist;
+        update = dist3[i] < min_dist;
+        nearest = update ? 3 : nearest;
+        min_dist = update ? dist3[i] : min_dist;
+        update = dist4[i] < min_dist;
+        nearest = update ? 4 : nearest;
+        min_dist = update ? dist4[i] : min_dist;
+        update = dist5[i] < min_dist;
+        nearest = update ? 5 : nearest;
+        min_dist = update ? dist5[i] : min_dist;
+        update = dist6[i] < min_dist;
+        nearest = update ? 6 : nearest;
+        min_dist = update ? dist6[i] : min_dist;
+        update = dist7[i] < min_dist;
+        nearest = update ? 7 : nearest;
+        min_dist = update ? dist7[i] : min_dist;
+        update = dist8[i] < min_dist;
+        nearest = update ? 8 : nearest;
+        min_dist = update ? dist8[i] : min_dist;
+        update = dist9[i] < min_dist;
+        nearest = update ? 9 : nearest;
+
+        results[i] = nearest;
+    }
+}
+
+
 // Atualiza centroids - versão otimizada (1 ÚNICA passada!)
 static void update_centroids_soa(float centroids[][NUM_FEATURES],
                                   const DataSetSoA * restrict dataset, int k) {
@@ -713,85 +1371,151 @@ void kmeans_optimized(DataSetSoA * restrict dataset,
     for (int iter = 0; iter < max_iterations; iter++) {
         int changes = 0;
 
-        // Usa versão especializada para k=2,3,4,5,6,7,8,9,10; genérica para outros
+        // Usa versão especializada SIMD+Unroll para k=2,3,4,5,6,7,8,9,10; genérica para outros
+        const size_t n_simd = (n / 8) * 8;
+        int results[8];
+
         if (k == 2) {
-            // Loop principal otimizado para k=2 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=2
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k2(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k2(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 3) {
-            // Loop principal otimizado para k=3 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=3
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k3(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k3(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 4) {
-            // Loop principal otimizado para k=4 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=4
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k4(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k4(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 5) {
-            // Loop principal otimizado para k=5 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=5
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k5(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k5(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 6) {
-            // Loop principal otimizado para k=6 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=6
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k6(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k6(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 7) {
-            // Loop principal otimizado para k=7 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=7
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k7(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k7(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 8) {
-            // Loop principal otimizado para k=8 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=8
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k8(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k8(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 9) {
-            // Loop principal otimizado para k=9 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=9
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k9(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k9(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
         } else if (k == 10) {
-            // Loop principal otimizado para k=10 com unrolling
-            for (size_t i = 0; i < n; i++) {
+            // Loop SIMD+Unroll para k=10
+            for (size_t i = 0; i < n_simd; i += 8) {
+                find_nearest_clusters_8_k10(f0, f1, f2, f3, f4, f5, f6, i, centroids, results);
+                for (int j = 0; j < 8; j++) {
+                    const int old_cluster = cluster_ids[i + j];
+                    cluster_ids[i + j] = results[j];
+                    changes += (old_cluster != results[j]);
+                }
+            }
+            for (size_t i = n_simd; i < n; i++) {
                 const int old_cluster = cluster_ids[i];
                 const int new_cluster = find_nearest_cluster_k10(f0, f1, f2, f3, f4, f5, f6, i, centroids);
-
                 cluster_ids[i] = new_cluster;
                 changes += (old_cluster != new_cluster);
             }
