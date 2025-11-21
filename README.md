@@ -1,6 +1,6 @@
-# K-means: Naive vs Optimized (SoA) vs Optimized + Loop Unrolling
+# K-means: Naive vs Optimized (SoA + SIMD) vs Optimized (SoA + SIMD + Unrolling)
 
-Implementação de K-means em C comparando **três versões** para isolar e medir o impacto de diferentes otimizações no desempenho.
+Implementação de K-means em C comparando **três versões** para isolar e medir o impacto de diferentes otimizações (SIMD/AVX, SoA, Loop Unrolling) no desempenho.
 
 ## Implementações
 
@@ -22,9 +22,9 @@ DataPoint points[N];  // [p0: f0,f1,...,f6][p1: f0,f1,...,f6]...
 - Boa localidade espacial ao acessar todas features de um ponto
 - Má localidade ao processar uma feature específica de múltiplos pontos
 
-### 2. Optimized No-Unroll (Struct of Arrays - SoA)
+### 2. Optimized No-Unroll (SoA + SIMD/AVX)
 
-Organização onde cada feature é armazenada em um array separado, **sem loop unrolling manual**:
+Organização onde cada feature é armazenada em um array separado, com **paralelização SIMD**, **sem loop unrolling manual**:
 
 ```c
 typedef struct {
@@ -43,42 +43,64 @@ typedef struct {
 - Features separadas em arrays contíguos
 - Excelente localidade espacial e temporal ao processar uma feature
 - Cache lines são utilizadas de forma mais eficiente
-- Permite vetorização automática pelo compilador
+- **Processa 8 pontos simultaneamente** usando instruções AVX/SIMD
 
 **Otimizações implementadas:**
 
-1. **Single-pass centroid updates**: Acumula todas features em uma única passada
-2. **Branchless distance calculation**: Calcula distâncias sem branches
-3. **Restrict pointers**: Permite ao compilador assumir não-aliasing
-4. **Aggressive compilation**: -O3 -march=native -ffast-math -flto -funroll-loops
-
-### 3. Optimized With-Unroll (SoA + Manual Loop Unrolling)
-
-Versão SoA com **loop unrolling manual especializado** para K=2 até K=10:
-
-**Otimizações implementadas:**
-
-1. **Single-pass centroid updates**: Acumula todas features em uma única passada
-2. **Branchless distance calculation**: Calcula distâncias sem branches
-3. **Manual loop unrolling**: Loop desenrolado manualmente para K=2 até K=10
+1. **SIMD/AVX**: Processa 8 pontos por iteração usando AVX (`__m256`)
+   - Broadcast de centroids: `_mm256_set1_ps()`
+   - Carregamento vetorial: `_mm256_loadu_ps()`
+   - Operações FMA: `_mm256_fmadd_ps()` (Fused Multiply-Add)
+2. **Single-pass centroid updates**: Acumula todas features em uma única passada
+3. **Branchless distance calculation**: Calcula distâncias sem branches
 4. **Restrict pointers**: Permite ao compilador assumir não-aliasing
 5. **Aggressive compilation**: -O3 -march=native -ffast-math -flto -funroll-loops
 
-**Exemplo de unrolling para K=5:**
-```c
-// Em vez de loop genérico:
-for (int c = 0; c < k; c++) { /* calcular distância */ }
+### 3. Optimized With-Unroll (SoA + SIMD/AVX + Manual Loop Unrolling)
 
-// Código desenrolado fixo para K=5:
-dist0 = euclidean_distance_soa_fast(..., centroids[0]);
-dist1 = euclidean_distance_soa_fast(..., centroids[1]);
-dist2 = euclidean_distance_soa_fast(..., centroids[2]);
-dist3 = euclidean_distance_soa_fast(..., centroids[3]);
-dist4 = euclidean_distance_soa_fast(..., centroids[4]);
-nearest = find_min_of_5(dist0, dist1, dist2, dist3, dist4);
+Versão SoA com **SIMD/AVX + loop unrolling manual especializado** para K=2 até K=10:
+
+**Otimizações implementadas:**
+
+1. **SIMD/AVX + Loop Unrolling combinados**: Para cada K fixo (2-10):
+   - Processa **8 pontos simultaneamente** usando AVX
+   - Loop sobre K **desenrolado completamente** (sem branches)
+   - Exemplo K=5: 5 chamadas SIMD desenroladas, cada uma processando 8 pontos
+2. **Single-pass centroid updates**: Acumula todas features em uma única passada
+3. **Branchless distance calculation**: Calcula distâncias sem branches usando operador ternário
+4. **FMA instructions**: `_mm256_fmadd_ps()` para operações `a*b + c` em uma instrução
+5. **Restrict pointers**: Permite ao compilador assumir não-aliasing
+6. **Aggressive compilation**: -O3 -march=native -ffast-math -flto -funroll-loops
+
+**Exemplo de SIMD + Unrolling para K=5:**
+```c
+// Loop principal: processa 8 pontos por iteração
+for (size_t i = 0; i < n; i += 8) {
+    // Desenrolamento completo do loop sobre K=5 (SIMD para cada centroid)
+    compute_distances_8_simd(..., centroids[0], dist0);  // 8 pontos vs centroid 0
+    compute_distances_8_simd(..., centroids[1], dist1);  // 8 pontos vs centroid 1
+    compute_distances_8_simd(..., centroids[2], dist2);  // 8 pontos vs centroid 2
+    compute_distances_8_simd(..., centroids[3], dist3);  // 8 pontos vs centroid 3
+    compute_distances_8_simd(..., centroids[4], dist4);  // 8 pontos vs centroid 4
+
+    // Encontrar mínimo para cada um dos 8 pontos (branchless)
+    for (int j = 0; j < 8; j++) {
+        nearest[j] = find_min_branchless(dist0[j], dist1[j], dist2[j], dist3[j], dist4[j]);
+    }
+}
+
+// Dentro de compute_distances_8_simd (exemplo simplificado):
+__m256 vc = _mm256_set1_ps(centroid_value);      // Broadcast centroid
+__m256 vp = _mm256_loadu_ps(&points[idx]);       // Load 8 pontos
+__m256 diff = _mm256_sub_ps(vp, vc);             // Calcular diferenças
+__m256 dist = _mm256_fmadd_ps(diff, diff, sum);  // FMA: diff² + sum
 ```
 
-Isso permite ao compilador eliminar branches, melhorar pipeline de instruções e aumentar IPC.
+**Ganhos:**
+- Elimina branches do loop sobre K (unrolling)
+- Paraleliza operações sobre 8 pontos (SIMD)
+- Melhora pipeline de instruções e IPC
+- **Speedup de até 2.55x** para K=10 vs naive
 
 ## Quick Start
 

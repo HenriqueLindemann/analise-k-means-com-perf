@@ -1,0 +1,310 @@
+====================================================================================================
+  K-MEANS COMPARISON: IMPACT OF K ON PERFORMANCE (3 VERSIONS)
+====================================================================================================
+
+EXECUTION TIME COMPARISON
+----------------------------------------------------------------------------------------------------
+K     Naive (s)       No-Unroll (s)   With-Unroll (s)    N→WU       NU→WU     
+----------------------------------------------------------------------------------------------------
+2     0.109           0.098           0.089              1.22      x 1.10      x
+3     0.146           0.121           0.105              1.38      x 1.15      x
+4     0.315           0.225           0.211              1.49      x 1.07      x
+5     1.447           0.978           0.828              1.75      x 1.18      x
+6     1.045           0.695           0.462              2.26      x 1.50      x
+7     0.595           0.404           0.261              2.27      x 1.55      x
+8     2.123           1.378           0.841              2.52      x 1.64      x
+9     3.225           1.601           0.932              3.46      x 1.72      x
+10    3.422           1.985           1.107              3.09      x 1.79      x
+
+DETAILED METRICS BY K
+----------------------------------------------------------------------------------------------------
+
+K = 2
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           0.109 s
+    Cycles:         0.47 B
+    Instructions:   1.37 B
+    IPC:            2.91
+    Cache misses:   9.61 M
+    Branches:       0.16 B
+    Branch misses:  0.04 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           0.098 s
+    Cycles:         0.42 B
+    Instructions:   1.10 B
+    IPC:            2.61
+    Cache misses:   5.55 M
+    Branches:       0.09 B
+    Branch misses:  0.10 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.089 s
+    Cycles:         0.38 B
+    Instructions:   0.99 B
+    IPC:            2.59
+    Cache misses:   5.91 M
+    Branches:       0.08 B
+    Branch misses:  0.07 M
+
+  Speedup (Naive → With-Unroll):     1.22x
+  Unroll Effect (No-Unroll → With-Unroll): 1.10x
+
+K = 3
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           0.146 s
+    Cycles:         0.63 B
+    Instructions:   1.81 B
+    IPC:            2.87
+    Cache misses:   10.34 M
+    Branches:       0.18 B
+    Branch misses:  0.05 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           0.121 s
+    Cycles:         0.52 B
+    Instructions:   1.33 B
+    IPC:            2.54
+    Cache misses:   5.73 M
+    Branches:       0.11 B
+    Branch misses:  0.28 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.105 s
+    Cycles:         0.45 B
+    Instructions:   1.22 B
+    IPC:            2.68
+    Cache misses:   5.87 M
+    Branches:       0.10 B
+    Branch misses:  0.27 M
+
+  Speedup (Naive → With-Unroll):     1.38x
+  Unroll Effect (No-Unroll → With-Unroll): 1.15x
+
+K = 4
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           0.315 s
+    Cycles:         1.37 B
+    Instructions:   4.17 B
+    IPC:            3.04
+    Cache misses:   20.60 M
+    Branches:       0.33 B
+    Branch misses:  0.52 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           0.225 s
+    Cycles:         0.98 B
+    Instructions:   2.64 B
+    IPC:            2.71
+    Cache misses:   9.45 M
+    Branches:       0.16 B
+    Branch misses:  0.87 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.211 s
+    Cycles:         0.91 B
+    Instructions:   2.40 B
+    IPC:            2.62
+    Cache misses:   9.83 M
+    Branches:       0.13 B
+    Branch misses:  0.41 M
+
+  Speedup (Naive → With-Unroll):     1.49x
+  Unroll Effect (No-Unroll → With-Unroll): 1.07x
+
+K = 5
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           1.447 s
+    Cycles:         6.31 B
+    Instructions:   19.93 B
+    IPC:            3.16
+    Cache misses:   86.12 M
+    Branches:       1.23 B
+    Branch misses:  0.78 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           0.978 s
+    Cycles:         4.25 B
+    Instructions:   11.82 B
+    IPC:            2.78
+    Cache misses:   35.39 M
+    Branches:       0.56 B
+    Branch misses:  4.67 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.828 s
+    Cycles:         3.60 B
+    Instructions:   10.41 B
+    IPC:            2.89
+    Cache misses:   36.56 M
+    Branches:       0.31 B
+    Branch misses:  1.98 M
+
+  Speedup (Naive → With-Unroll):     1.75x
+  Unroll Effect (No-Unroll → With-Unroll): 1.18x
+
+K = 6
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           1.045 s
+    Cycles:         4.56 B
+    Instructions:   15.31 B
+    IPC:            3.36
+    Cache misses:   56.97 M
+    Branches:       0.91 B
+    Branch misses:  0.83 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           0.695 s
+    Cycles:         3.02 B
+    Instructions:   8.12 B
+    IPC:            2.69
+    Cache misses:   22.65 M
+    Branches:       0.43 B
+    Branch misses:  4.67 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.462 s
+    Cycles:         1.98 B
+    Instructions:   5.45 B
+    IPC:            2.75
+    Cache misses:   25.57 M
+    Branches:       0.13 B
+    Branch misses:  0.07 M
+
+  Speedup (Naive → With-Unroll):     2.26x
+  Unroll Effect (No-Unroll → With-Unroll): 1.50x
+
+K = 7
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           0.595 s
+    Cycles:         2.59 B
+    Instructions:   8.31 B
+    IPC:            3.21
+    Cache misses:   27.14 M
+    Branches:       0.47 B
+    Branch misses:  0.50 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           0.404 s
+    Cycles:         1.76 B
+    Instructions:   4.64 B
+    IPC:            2.64
+    Cache misses:   12.48 M
+    Branches:       0.29 B
+    Branch misses:  3.13 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.261 s
+    Cycles:         1.12 B
+    Instructions:   3.10 B
+    IPC:            2.76
+    Cache misses:   13.60 M
+    Branches:       0.10 B
+    Branch misses:  0.07 M
+
+  Speedup (Naive → With-Unroll):     2.27x
+  Unroll Effect (No-Unroll → With-Unroll): 1.55x
+
+K = 8
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           2.123 s
+    Cycles:         9.26 B
+    Instructions:   31.13 B
+    IPC:            3.36
+    Cache misses:   88.83 M
+    Branches:       1.59 B
+    Branch misses:  1.14 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           1.378 s
+    Cycles:         6.00 B
+    Instructions:   16.26 B
+    IPC:            2.71
+    Cache misses:   37.58 M
+    Branches:       0.90 B
+    Branch misses:  12.86 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.841 s
+    Cycles:         3.61 B
+    Instructions:   10.15 B
+    IPC:            2.81
+    Cache misses:   41.55 M
+    Branches:       0.17 B
+    Branch misses:  0.07 M
+
+  Speedup (Naive → With-Unroll):     2.52x
+  Unroll Effect (No-Unroll → With-Unroll): 1.64x
+
+K = 9
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           3.225 s
+    Cycles:         14.08 B
+    Instructions:   46.81 B
+    IPC:            3.32
+    Cache misses:   121.32 M
+    Branches:       2.18 B
+    Branch misses:  1.04 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           1.601 s
+    Cycles:         6.97 B
+    Instructions:   18.47 B
+    IPC:            2.65
+    Cache misses:   39.69 M
+    Branches:       1.05 B
+    Branch misses:  19.08 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           0.932 s
+    Cycles:         4.00 B
+    Instructions:   13.54 B
+    IPC:            3.38
+    Cache misses:   42.88 M
+    Branches:       0.22 B
+    Branch misses:  0.08 M
+
+  Speedup (Naive → With-Unroll):     3.46x
+  Unroll Effect (No-Unroll → With-Unroll): 1.72x
+
+K = 10
+------------------------------------------------------------
+  Naive (AoS):
+    Time:           3.422 s
+    Cycles:         14.94 B
+    Instructions:   50.87 B
+    IPC:            3.41
+    Cache misses:   114.91 M
+    Branches:       2.34 B
+    Branch misses:  0.84 M
+
+  Optimized (SoA, No-Unroll):
+    Time:           1.985 s
+    Cycles:         8.65 B
+    Instructions:   22.91 B
+    IPC:            2.65
+    Cache misses:   46.24 M
+    Branches:       1.35 B
+    Branch misses:  26.87 M
+
+  Optimized (SoA, With-Unroll):
+    Time:           1.107 s
+    Cycles:         4.75 B
+    Instructions:   16.52 B
+    IPC:            3.48
+    Cache misses:   49.44 M
+    Branches:       0.25 B
+    Branch misses:  0.07 M
+
+  Speedup (Naive → With-Unroll):     3.09x
+  Unroll Effect (No-Unroll → With-Unroll): 1.79x
+
+====================================================================================================

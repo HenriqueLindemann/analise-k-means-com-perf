@@ -1,0 +1,123 @@
+========================================
+  K-means Validation (3 Versions)
+========================================
+K=8, Max iterations=100
+Dataset: data/dataset.bin
+
+[1/9] Loading dataset for NAIVE version...
+  Loaded 2049280 points
+[2/9] Running NAIVE K-means...
+  Naive inertia: 49468460.00
+[3/9] Loading dataset for OPTIMIZED NO-UNROLL version...
+  Loaded 2049280 points
+[4/9] Running OPTIMIZED NO-UNROLL K-means...
+  Optimized no-unroll inertia: 49468480.00
+[5/9] Loading dataset for OPTIMIZED WITH-UNROLL version...
+  Loaded 2049280 points
+[6/9] Running OPTIMIZED WITH-UNROLL K-means...
+  Optimized with-unroll inertia: 49468480.00
+[7/9] Comparing results...
+
+--- NAIVE vs NO-UNROLL ---
+
+=== Comparing Centroids ===
+  Naive cluster 0 <-> Optimized cluster 0: distance = 0.000016 ✓
+  Naive cluster 1 <-> Optimized cluster 1: distance = 0.000000 ✓
+  Naive cluster 2 <-> Optimized cluster 2: distance = 0.000000 ✓
+  Naive cluster 3 <-> Optimized cluster 3: distance = 0.000000 ✓
+  Naive cluster 4 <-> Optimized cluster 4: distance = 0.000015 ✓
+  Naive cluster 5 <-> Optimized cluster 5: distance = 0.000031 ✓
+  Naive cluster 6 <-> Optimized cluster 6: distance = 0.000017 ✓
+  Naive cluster 7 <-> Optimized cluster 7: distance = 0.000046 ✓
+
+Matches: 8/8
+
+--- NAIVE vs WITH-UNROLL ---
+
+=== Comparing Centroids ===
+  Naive cluster 0 <-> Optimized cluster 0: distance = 0.000016 ✓
+  Naive cluster 1 <-> Optimized cluster 1: distance = 0.000000 ✓
+  Naive cluster 2 <-> Optimized cluster 2: distance = 0.000000 ✓
+  Naive cluster 3 <-> Optimized cluster 3: distance = 0.000000 ✓
+  Naive cluster 4 <-> Optimized cluster 4: distance = 0.000015 ✓
+  Naive cluster 5 <-> Optimized cluster 5: distance = 0.000031 ✓
+  Naive cluster 6 <-> Optimized cluster 6: distance = 0.000017 ✓
+  Naive cluster 7 <-> Optimized cluster 7: distance = 0.000046 ✓
+
+Matches: 8/8
+
+--- NO-UNROLL vs WITH-UNROLL ---
+
+=== Comparing Centroids ===
+  Naive cluster 0 <-> Optimized cluster 0: distance = 0.000000 ✓
+  Naive cluster 1 <-> Optimized cluster 1: distance = 0.000000 ✓
+  Naive cluster 2 <-> Optimized cluster 2: distance = 0.000000 ✓
+  Naive cluster 3 <-> Optimized cluster 3: distance = 0.000000 ✓
+  Naive cluster 4 <-> Optimized cluster 4: distance = 0.000000 ✓
+  Naive cluster 5 <-> Optimized cluster 5: distance = 0.000000 ✓
+  Naive cluster 6 <-> Optimized cluster 6: distance = 0.000000 ✓
+  Naive cluster 7 <-> Optimized cluster 7: distance = 0.000000 ✓
+
+Matches: 8/8
+
+[8/9] Comparing cluster distributions...
+
+--- Naive vs No-Unroll Distribution ---
+
+=== Comparing Cluster Distribution ===
+Cluster | Naive Count | Optimized Count | Difference
+--------|-------------|-----------------|------------
+   0    |       46381 |           46381 | 0 (0.000%)
+   1    |      646928 |          646928 | 0 (0.000%)
+   2    |      111816 |          111816 | 0 (0.000%)
+   3    |      116149 |          116149 | 0 (0.000%)
+   4    |       51634 |           51634 | 0 (0.000%)
+   5    |       55350 |           55350 | 0 (0.000%)
+   6    |      419272 |          419269 | 3 (0.000%)
+   7    |      601750 |          601753 | 3 (0.000%)
+
+--- Naive vs With-Unroll Distribution ---
+
+=== Comparing Cluster Distribution ===
+Cluster | Naive Count | Optimized Count | Difference
+--------|-------------|-----------------|------------
+   0    |       46381 |           46381 | 0 (0.000%)
+   1    |      646928 |          646928 | 0 (0.000%)
+   2    |      111816 |          111816 | 0 (0.000%)
+   3    |      116149 |          116149 | 0 (0.000%)
+   4    |       51634 |           51634 | 0 (0.000%)
+   5    |       55350 |           55350 | 0 (0.000%)
+   6    |      419272 |          419269 | 3 (0.000%)
+   7    |      601750 |          601753 | 3 (0.000%)
+
+--- No-Unroll vs With-Unroll Distribution ---
+
+=== Comparing Cluster Distribution ===
+Cluster | Naive Count | Optimized Count | Difference
+--------|-------------|-----------------|------------
+   0    |       46381 |           46381 | 0 (0.000%)
+   1    |      646928 |          646928 | 0 (0.000%)
+   2    |      111816 |          111816 | 0 (0.000%)
+   3    |      116149 |          116149 | 0 (0.000%)
+   4    |       51634 |           51634 | 0 (0.000%)
+   5    |       55350 |           55350 | 0 (0.000%)
+   6    |      419269 |          419269 | 0 (0.000%)
+   7    |      601753 |          601753 | 0 (0.000%)
+
+=== Comparing Inertia ===
+  Naive inertia:              49468460.00
+  Optimized no-unroll inertia: 49468480.00
+  Optimized with-unroll inertia: 49468480.00
+
+  Naive vs No-Unroll diff:    20.00 (0.000%)
+  Naive vs With-Unroll diff:  20.00 (0.000%)
+  No-Unroll vs With-Unroll:   0.00 (0.000%)
+
+[9/9] Final validation result:
+========================================
+✓ VALIDATION PASSED
+  All 3 implementations produce equivalent results!
+  - Naive vs No-Unroll: ✓
+  - Naive vs With-Unroll: ✓
+  - No-Unroll vs With-Unroll: ✓
+========================================
